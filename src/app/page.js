@@ -1,65 +1,67 @@
-import Image from "next/image";
+﻿import Link from "next/link";
+import HeroBanner from "../components/ecommerce/HeroBanner";
+import CategoryPills from "../components/ecommerce/CategoryPills";
+import ProductCard from "../components/ecommerce/ProductCard";
+import { categories, heroDeals, offerBanners, products } from "../lib/dummy-data";
 
 export default function Home() {
+  const featuredProducts = products.slice(0, 8);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="space-y-6 pb-8">
+      <div className="full-bleed">
+        <HeroBanner deals={heroDeals} />
+      </div>
+
+      <div className="space-y-6 px-4 md:px-8 lg:px-10">
+        <section className="grid gap-3 sm:grid-cols-3">
+          <article className="soft-card p-4 text-sm">
+            <p className="font-semibold text-slate-100">Envio confiable</p>
+            <p className="mt-1 text-slate-400">Cobertura en todo el pais y seguimiento en tiempo real.</p>
+          </article>
+          <article className="soft-card p-4 text-sm">
+            <p className="font-semibold text-slate-100">Pagos seguros</p>
+            <p className="mt-1 text-slate-400">Tarjeta, transferencia y efectivo en puntos autorizados.</p>
+          </article>
+          <article className="soft-card p-4 text-sm">
+            <p className="font-semibold text-slate-100">Soporte 24/7</p>
+            <p className="mt-1 text-slate-400">Te ayudamos antes, durante y despues de cada compra.</p>
+          </article>
+        </section>
+
+        <CategoryPills categories={categories} />
+
+        <section className="soft-card p-4 md:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="section-title text-slate-100">Productos destacados</h2>
+            <Link href="/ofertas" className="text-xs font-semibold text-cyan-300 hover:underline">
+              Ver todas las ofertas
+            </Link>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {offerBanners.map((banner) => (
+            <article
+              key={banner.id}
+              className={`rounded-2xl bg-gradient-to-r ${banner.color} p-4 text-white shadow-lg`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              <p className="text-xs font-medium text-white/80">Promocion</p>
+              <p className="mt-2 text-lg font-extrabold leading-tight">{banner.title}</p>
+              <p className="mt-1 text-sm text-white/90">{banner.subtitle}</p>
+              <Link href="/ofertas" className="mt-4 inline-flex rounded-lg bg-black/25 px-3 py-2 text-xs font-semibold backdrop-blur hover:bg-black/35">
+                Ver promo
+              </Link>
+            </article>
+          ))}
+        </section>
+      </div>
     </div>
   );
 }
