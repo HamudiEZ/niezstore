@@ -13,8 +13,8 @@ export default function Home() {
         <HeroBanner deals={heroDeals} />
       </div>
 
-      <div className="space-y-6 px-4 md:px-8 lg:px-10">
-        <section className="grid gap-3 sm:grid-cols-3">
+      <div className="space-y-6">
+        <section className="grid shop-card-grid sm:grid-cols-3">
           <article className="soft-card p-4 text-sm">
             <p className="font-semibold text-slate-100">Envio confiable</p>
             <p className="mt-1 text-slate-400">Cobertura en todo el pais y seguimiento en tiempo real.</p>
@@ -39,14 +39,14 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
             {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
           {offerBanners.map((banner) => (
             <article
               key={banner.id}

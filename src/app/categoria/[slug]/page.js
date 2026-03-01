@@ -46,7 +46,7 @@ export default function CategoryPage({ params }) {
               No hay productos en esta categoria todavia.
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid shop-card-grid sm:grid-cols-2 xl:grid-cols-3">
               {categoryProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
