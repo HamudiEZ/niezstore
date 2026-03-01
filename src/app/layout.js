@@ -19,7 +19,9 @@ export default function RootLayout({ children }) {
     <html lang="es">
       <body className={`${manrope.variable} flex min-h-screen flex-col antialiased`}>
         <Navbar />
-        <main className="w-full flex-1">{children}</main>
+        <main className="w-full flex-1 px-4 py-6 md:px-8 md:py-7 lg:px-10">
+          {children}
+        </main>
         <Footer />
       </body>
     </html>

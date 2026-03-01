@@ -10,6 +10,7 @@
   --primary-foreground: #062a27;
   --accent: #22d3ee;
   --muted: #94a3b8;
+  --shop-card-gap: 0.75rem;
 }
 
 :root.theme-light {
@@ -28,7 +29,9 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-manrope);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
 }
@@ -49,8 +52,16 @@ body {
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.12), transparent 45%),
-    radial-gradient(circle at 0% 20%, rgba(20, 184, 166, 0.12), transparent 45%),
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(34, 211, 238, 0.12),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 0% 20%,
+      rgba(20, 184, 166, 0.12),
+      transparent 45%
+    ),
     var(--background);
   color: var(--foreground);
 }
@@ -79,7 +90,11 @@ a {
 
 .soft-card {
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, #fff 4%), var(--surface));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 96%, #fff 4%),
+    var(--surface)
+  );
   border-radius: 1rem;
   box-shadow: 0 16px 45px rgba(2, 6, 23, 0.35);
 }
@@ -108,6 +123,7 @@ a {
 :root.theme-light .bg-slate-900\/60,
 :root.theme-light .bg-slate-900\/55,
 :root.theme-light .bg-slate-900\/90,
+:root.theme-light .bg-slate-900\/95,
 :root.theme-light .bg-slate-900,
 :root.theme-light .bg-slate-950,
 :root.theme-light .bg-slate-950\/75,
@@ -122,10 +138,130 @@ a {
   border-color: var(--border) !important;
 }
 
+:root.theme-light .hover\:text-cyan-300:hover {
+  color: rgb(50, 227, 250) !important;
+}
+
+:root.theme-light .hover\:border-cyan-400\/70:hover {
+  border-color: rgba(14, 176, 201, 0.7) !important;
+}
+
 .section-title {
   font-size: clamp(1rem, 1.5vw, 1.4rem);
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.shop-card-grid {
+  gap: var(--shop-card-gap);
+}
+
+.form-input {
+  height: 2.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(51 65 85);
+  background: rgb(15 23 42);
+  padding: 0 0.75rem;
+  color: rgb(241 245 249);
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: rgb(34 211 238);
+}
+
+.form-input-with-icon {
+  padding-right: 2.75rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: rgb(148 163 184);
+}
+
+.password-toggle:hover {
+  background-color: rgb(30 41 59);
+  color: rgb(226 232 240);
+}
+
+.auth-error {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(244 63 94 / 0.4);
+  background: rgb(244 63 94 / 0.1);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: rgb(254 205 211);
+}
+
+.notice-muted {
+  border-radius: 0.75rem;
+  border: 1px dashed var(--border);
+  background: color-mix(in srgb, var(--surface-soft) 88%, #000 12%);
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.hero-cta-secondary {
+  background: rgb(15 23 42 / 0.75);
+  color: #fff;
+}
+
+.hero-cta-secondary:hover {
+  background: rgb(15 23 42 / 0.9);
+}
+
+.nav-hover:hover {
+  background-color: rgb(34 211 238 / 0.16);
+  border-color: rgb(34 211 238 / 0.55);
+}
+
+:root.theme-light .nav-hover:hover {
+  background-color: #e7edf6;
+  border-color: #67e8f9;
+}
+
+.nav-link-hover:hover {
+  color: rgb(103 232 249) !important;
+}
+
+:root.theme-light .form-input {
+  border-color: var(--border);
+  background: #ffffff;
+  color: #0f172a;
+}
+
+:root.theme-light .password-toggle:hover {
+  background-color: #e7edf6;
+  color: #334155;
+}
+
+:root.theme-light .hover\:bg-slate-900:hover,
+:root.theme-light .hover\:bg-slate-800:hover {
+  background-color: #eef4fb !important;
+}
+
+:root.theme-light .auth-error {
+  background: #fff1f2;
+  border-color: #fda4af;
+  color: #9f1239;
+}
+
+:root.theme-light .notice-muted {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
 }
 
 @keyframes heroAppear {

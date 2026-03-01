@@ -73,7 +73,7 @@ export default function ProductPage({ params }) {
 
       <section className="soft-card p-4 md:p-5">
         <h2 className="section-title text-slate-100">Tambien te puede interesar</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
           {relatedProducts.map((item) => (
             <ProductCard key={item.id} product={item} />
           ))}

@@ -23,20 +23,20 @@ export default function HeroBanner({ deals = [] }) {
   const ctaStyles = {
     "combo-perifericos-pro": {
       primary: "bg-cyan-300 text-slate-950 hover:bg-cyan-200",
-      secondary: "bg-slate-950/70 text-white hover:bg-slate-950",
+      secondary: "hero-cta-secondary",
     },
     "setup-laptop-ultra": {
       primary: "bg-amber-300 text-slate-950 hover:bg-amber-200",
-      secondary: "bg-slate-900/70 text-amber-50 hover:bg-slate-900",
+      secondary: "hero-cta-secondary text-amber-50",
     },
     "smart-tv-cine": {
       primary: "bg-rose-300 text-slate-950 hover:bg-rose-200",
-      secondary: "bg-slate-900/75 text-rose-50 hover:bg-slate-900",
+      secondary: "hero-cta-secondary text-rose-50",
     },
   };
   const tone = ctaStyles[deal.id] ?? {
     primary: "bg-cyan-300 text-slate-950 hover:bg-cyan-200",
-    secondary: "bg-slate-950/70 text-white hover:bg-slate-950",
+    secondary: "hero-cta-secondary",
   };
 
   const goToPrevious = () => {

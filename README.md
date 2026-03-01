@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Niez Store
 
-## Getting Started
+Ecommerce en Next.js + Prisma + PostgreSQL.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 20+ (recomendado 22+)
+- PostgreSQL en local o remoto
+
+## Configuracion rapida
+
+1. Instalar dependencias:
+
+```bash
+npm install
+```
+
+2. Configurar `DATABASE_URL` en `.env`.
+
+3. Aplicar migraciones:
+
+```bash
+npm run prisma:migrate -- --name init
+```
+
+4. (Opcional) Sembrar admin:
+
+```bash
+npm run prisma:seed
+```
+
+5. Iniciar entorno de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts utiles
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- `npm run dev`: servidor local
+- `npm run lint`: lint del proyecto
+- `npm run build`: build de produccion
+- `npm run prisma:generate`: regenerar Prisma Client
+- `npm run prisma:migrate`: crear/aplicar migraciones en desarrollo
+- `npm run prisma:studio`: explorar DB en Prisma Studio
+- `npm run prisma:seed`: ejecutar seed
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Modulo Auth (actual)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Registro e inicio de sesion con cookie HTTP-only.
+- Hash de contrasena con `bcrypt`.
+- Compatibilidad temporal con hash legacy SHA-256 (se migra automaticamente al hacer login).
+- Rate limit en login (intentos fallidos por IP + email).
+- Ruta de recuperacion de contrasena (placeholder UI): `/forgot-password`.
