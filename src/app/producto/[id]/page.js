@@ -1,53 +1,73 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import ProductCard from "../../../components/ecommerce/ProductCard";
 import { Button } from "../../../components/ui/button";
-import { getCategoryById, getProductById, products } from "../../../lib/dummy-data";
+import { getProductById, getRelatedProducts } from "../../../lib/catalog";
 
-export default function ProductPage({ params }) {
-  const product = getProductById(params.id);
+const formatPrice = (value) =>
+  typeof value === "number" ? value.toFixed(2) : "0.00";
 
-  if (!product) {
+export default async function ProductPage({ params }) {
+  const resolvedParams = await params;
+  const product = await getProductById(resolvedParams?.id);
+
+  if (!product || !product.isActive) {
     return notFound();
   }
 
-  const category = getCategoryById(product.categoryId);
-  const relatedProducts = products
-    .filter((item) => item.categoryId === product.categoryId && item.id !== product.id)
-    .slice(0, 4);
+  const variants = product.variants ?? [];
+  const primaryVariant = variants[0];
+  const primaryImage = product.images?.[0]?.url || primaryVariant?.imageUrl;
+  const price = primaryVariant ? Number(primaryVariant.price) : null;
+  const compareAt = primaryVariant?.compareAtPrice
+    ? Number(primaryVariant.compareAtPrice)
+    : null;
+  const relatedProducts = product.categoryId
+    ? await getRelatedProducts(product.categoryId, product.id, 4)
+    : [];
 
   return (
     <div className="space-y-6">
       <div className="text-xs text-slate-500">
-        Inicio / {category ? category.name : "Categoria"} / {product.name}
+        Inicio / {product.category?.name || "Categoria"} / {product.name}
       </div>
 
       <section className="soft-card p-4 md:p-6">
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div className="rounded-2xl bg-slate-900/70 p-4">
             <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-950">
-              <Image
-                src={product.imageUrl}
-                alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 550px"
-              />
+              {primaryImage ? (
+                <Image
+                  src={primaryImage}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 550px"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+                  Sin imagen
+                </div>
+              )}
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-300">{product.brand}</p>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-100">{product.name}</h1>
+            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-300">
+              {product.brand || "Niez Store"}
+            </p>
+            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-100">
+              {product.name}
+            </h1>
             <p className="mt-3 text-sm text-slate-400">{product.description}</p>
 
             <div className="mt-4 flex items-end gap-2">
               <span className="text-3xl font-extrabold tracking-tight text-slate-100">
-                ${product.price.toFixed(2)}
+                ${formatPrice(price)}
               </span>
-              {product.previousPrice ? (
+              {compareAt ? (
                 <span className="pb-1 text-sm text-slate-500 line-through">
-                  ${product.previousPrice.toFixed(2)}
+                  ${formatPrice(compareAt)}
                 </span>
               ) : null}
             </div>

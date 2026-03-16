@@ -21,8 +21,8 @@ export default async function AdminPage() {
           Admin Dashboard
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Gestiona productos y operaciones desde una sola vista. Esta fase es
-          UI-only, sin persistencia en base de datos.
+          Gestiona catalogo, opciones y variantes desde una sola vista. Los
+          cambios se guardan en la base de datos.
         </p>
       </header>
 

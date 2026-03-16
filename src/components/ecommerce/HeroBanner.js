@@ -80,7 +80,7 @@ export default function HeroBanner({ deals = [] }) {
 
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
-                href={`/categoria/${deal.categoryId}`}
+                href={`/categoria/${deal.categorySlug ?? deal.categoryId}`}
                 className={`inline-flex min-h-11 items-center rounded-lg px-5 text-sm font-semibold shadow-lg transition-colors duration-300 ${tone.primary}`}
               >
                 {deal.ctaPrimary}

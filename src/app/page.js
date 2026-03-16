@@ -2,10 +2,14 @@
 import HeroBanner from "../components/ecommerce/HeroBanner";
 import CategoryPills from "../components/ecommerce/CategoryPills";
 import ProductCard from "../components/ecommerce/ProductCard";
-import { categories, heroDeals, offerBanners, products } from "../lib/dummy-data";
+import { getFeaturedProducts, getPublicCategories } from "../lib/catalog";
+import { heroDeals, offerBanners } from "../lib/marketing-data";
 
-export default function Home() {
-  const featuredProducts = products.slice(0, 8);
+export default async function Home() {
+  const [categories, featuredProducts] = await Promise.all([
+    getPublicCategories(),
+    getFeaturedProducts(8),
+  ]);
 
   return (
     <div className="space-y-6 pb-8">

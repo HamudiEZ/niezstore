@@ -33,12 +33,13 @@ export default function CategoryPills({ categories }) {
 
       <div className="grid grid-cols-2 shop-card-grid sm:grid-cols-4 lg:grid-cols-8">
         {categories.map((category) => {
-          const Icon = categoryIcons[category.id] || Monitor;
+          const iconKey = category.slug || category.id;
+          const Icon = categoryIcons[iconKey] || Monitor;
 
           return (
             <Link
               key={category.id}
-              href={`/categoria/${category.id}`}
+              href={`/categoria/${category.slug ?? category.id}`}
               className="group rounded-xl border border-slate-700 bg-slate-900/70 p-3 transition hover:-translate-y-0.5 hover:border-cyan-400/70 hover:bg-slate-900"
             >
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-cyan-300 shadow-sm">
