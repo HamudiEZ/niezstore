@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { slugify } from "@/lib/slug";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 5;
+const MAX_PAGE_SIZE = 50;
+
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
 async function getUniqueSlug(base, excludeId) {
   let slug = base;
   let counter = 2;
@@ -14,16 +24,85 @@ async function getUniqueSlug(base, excludeId) {
   }
 }
 
-export async function GET() {
+export async function GET(request) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
+  const searchParams = request.nextUrl.searchParams;
+  const scope = String(searchParams.get("scope") ?? "").trim().toLowerCase();
+
+  if (scope === "all") {
+    const categories = await prisma.category.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+
+    return NextResponse.json({
+      categories,
+      pagination: {
+        page: 1,
+        pageSize: categories.length || 1,
+        total: categories.length,
+        totalPages: 1,
+        totalAll: categories.length,
+      },
+      totalAll: categories.length,
+    });
+  }
+
+  const search = String(searchParams.get("search") ?? "").trim();
+  const pageSize = Math.min(
+    parsePositiveInteger(searchParams.get("pageSize"), DEFAULT_PAGE_SIZE),
+    MAX_PAGE_SIZE
+  );
+  const requestedPage = parsePositiveInteger(
+    searchParams.get("page"),
+    DEFAULT_PAGE
+  );
+
+  const where = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { slug: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
+  const [filteredTotal, totalAll] = await Promise.all([
+    prisma.category.count({ where }),
+    prisma.category.count(),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const skip = (page - 1) * pageSize;
+
   const categories = await prisma.category.findMany({
+    where,
+    skip,
+    take: pageSize,
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json({ categories });
+
+  return NextResponse.json({
+    categories,
+    pagination: {
+      page,
+      pageSize,
+      total: filteredTotal,
+      totalPages,
+      totalAll,
+    },
+    totalAll,
+  });
 }
 
 export async function POST(request) {

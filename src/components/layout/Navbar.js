@@ -21,6 +21,12 @@ const navItems = [
   { href: "/cuenta", label: "Cuenta" },
 ];
 
+const hiddenNavbarRoutes = new Set([
+  "/login",
+  "/register",
+  "/forgot-password",
+]);
+
 function getInitialTheme() {
   return window.localStorage.getItem("theme") === "light" ? "light" : "dark";
 }
@@ -95,6 +101,7 @@ export default function Navbar() {
       }),
     [user]
   );
+  const hideNavbar = hiddenNavbarRoutes.has(pathname);
 
   const toggleTheme = () => {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
@@ -108,6 +115,10 @@ export default function Navbar() {
     router.replace("/");
     router.refresh();
   };
+
+  if (hideNavbar) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/85 backdrop-blur">

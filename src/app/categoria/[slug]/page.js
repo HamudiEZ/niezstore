@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import ProductCard from "../../../components/ecommerce/ProductCard";
 import { getProductsByCategorySlug } from "../../../lib/catalog";
+import PageShell from "../../../components/ui/page-shell";
+import PageHeader from "../../../components/ui/page-header";
+import SectionCard from "../../../components/ui/section-card";
 
 export default async function CategoryPage({ params }) {
   const resolvedParams = await params;
@@ -13,18 +17,13 @@ export default async function CategoryPage({ params }) {
   }
 
   return (
-    <div className="space-y-4">
+    <PageShell>
       <div className="text-xs text-slate-500">Inicio / Categoria / {category.name}</div>
 
-      <header className="soft-card p-4 md:p-5">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">
-          {category.name}
-        </h1>
-        <p className="mt-1 text-sm text-slate-400">{category.description}</p>
-      </header>
+      <PageHeader title={category.name} description={category.description || "Sin descripcion"} />
 
       <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="soft-card h-fit p-4 text-sm">
+        <SectionCard as="aside" className="h-fit p-4 text-sm">
           <p className="font-semibold text-slate-100">Filtros</p>
           <div className="mt-3 space-y-3 text-xs text-slate-400">
             <div>
@@ -43,15 +42,15 @@ export default async function CategoryPage({ params }) {
               UI de filtros, aun sin backend.
             </p>
           </div>
-        </aside>
+        </SectionCard>
 
-        <section className="soft-card p-4 md:p-5">
+        <SectionCard>
           {products.length === 0 ? (
             <div className="notice-muted flex flex-wrap items-center justify-center gap-2 text-center text-sm">
               <span>No hay productos en esta categoria todavia.</span>
-              <a href="/" className="accent-link font-semibold">
+              <Link href="/" className="accent-link font-semibold">
                 Volver al inicio
-              </a>
+              </Link>
             </div>
           ) : (
             <div className="grid shop-card-grid sm:grid-cols-2 xl:grid-cols-3">
@@ -60,8 +59,8 @@ export default async function CategoryPage({ params }) {
               ))}
             </div>
           )}
-        </section>
+        </SectionCard>
       </div>
-    </div>
+    </PageShell>
   );
 }

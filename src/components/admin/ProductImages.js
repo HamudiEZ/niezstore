@@ -61,8 +61,8 @@ export default function ProductImages({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-sm font-semibold text-slate-100">Imagenes</h3>
-        <p className="mt-1 text-xs text-slate-400">
+        <h3 className="text-sm font-semibold admin-title">Imagenes</h3>
+        <p className="mt-1 text-xs admin-subtitle">
           Sube una o varias imagenes del producto (JPG/PNG).
         </p>
       </div>
@@ -89,29 +89,24 @@ export default function ProductImages({
             isDragging ? "upload-drop--active" : ""
           }`}
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-slate-950/60 text-lg text-cyan-300 transition group-hover:border-cyan-300 group-hover:text-cyan-200">
+          <span className="admin-upload-icon flex h-10 w-10 items-center justify-center rounded-full text-lg transition">
             +
           </span>
           <span className="text-left">
-            <span className="block font-semibold text-slate-100">
-              Subir imagenes
-            </span>
-            <span className="block text-xs text-slate-400">
+            <span className="block font-semibold admin-title">Subir imagenes</span>
+            <span className="block text-xs admin-subtitle">
               Arrastra o haz click para seleccionar. {acceptHint}
             </span>
           </span>
         </button>
-        {message ? <p className="text-xs text-cyan-300">{message}</p> : null}
-        {uploadError ? <p className="text-xs text-rose-300">{uploadError}</p> : null}
+        {message ? <p className="admin-message">{message}</p> : null}
+        {uploadError ? <p className="admin-message admin-message--error">{uploadError}</p> : null}
       </div>
 
       {images?.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {images.map((image) => (
-            <div
-              key={image.id}
-              className="relative overflow-hidden rounded-lg border border-slate-800 bg-slate-900/60"
-            >
+            <div key={image.id} className="admin-list-item relative overflow-hidden">
               <div className="relative h-32">
                 <Image
                   src={image.url}
@@ -122,7 +117,7 @@ export default function ProductImages({
                 />
               </div>
               <div className="flex items-center justify-between p-2">
-                <span className="text-[11px] text-slate-400">#{image.position + 1}</span>
+                <span className="text-[11px] admin-subtitle">#{image.position + 1}</span>
                 <Button
                   type="button"
                   size="sm"
@@ -137,7 +132,7 @@ export default function ProductImages({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-slate-400">Sin imagenes cargadas.</p>
+        <p className="text-xs admin-subtitle">Sin imagenes cargadas.</p>
       )}
     </div>
   );

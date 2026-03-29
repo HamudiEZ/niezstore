@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { getPublicCategories } from "../../lib/catalog";
+import PageShell from "../../components/ui/page-shell";
+import PageHeader from "../../components/ui/page-header";
+import SectionCard from "../../components/ui/section-card";
 
 export default async function CategoriesPage() {
   const categories = await getPublicCategories();
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">
-        Todas las categorias
-      </h1>
-      <section className="soft-card p-4 md:p-5">
+    <PageShell>
+      <PageHeader
+        title="Todas las categorias"
+        description="Explora cada seccion del catalogo y entra al listado de productos."
+      />
+      <SectionCard>
         <div className="grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
           {categories.map((category) => (
             <Link
@@ -24,7 +28,7 @@ export default async function CategoriesPage() {
             </Link>
           ))}
         </div>
-      </section>
-    </div>
+      </SectionCard>
+    </PageShell>
   );
 }

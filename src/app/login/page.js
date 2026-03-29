@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "../../components/ui/button";
+import AuthPanel from "../../components/ui/auth-panel";
+import PageShell from "../../components/ui/page-shell";
+import AuthTopBar from "../../components/ui/auth-topbar";
+import AuthTrustPanel from "../../components/ui/auth-trust-panel";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,72 +49,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center py-6">
-      <section className="soft-card w-full max-w-md p-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">
-          Iniciar sesion
-        </h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Accede a tus pedidos y direcciones guardadas.
-        </p>
-
-        <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-          <input
-            type="email"
-            className="form-input"
-            placeholder="Correo electronico"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-          <div className="relative">
+    <PageShell gap="sm" className="mx-auto w-full max-w-5xl py-1">
+      <AuthTopBar />
+      <section className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <AuthTrustPanel />
+        <AuthPanel
+          className="mx-auto lg:ml-auto lg:mr-0"
+          title="Iniciar sesion"
+          description="Accede a tus pedidos y direcciones guardadas."
+          footer={
+            <>
+              No tienes cuenta?{" "}
+              <Link href="/register" className="font-semibold text-cyan-300 hover:underline">
+                Registrate
+              </Link>
+            </>
+          }
+        >
+          <form className="space-y-3" onSubmit={handleSubmit}>
             <input
-              type={showPassword ? "text" : "password"}
-              className="form-input form-input-with-icon"
-              placeholder="Contrasena"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              type="email"
+              className="form-input"
+              placeholder="Correo electronico"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={() => setShowPassword((current) => !current)}
-              aria-label={
-                showPassword ? "Ocultar contrasena" : "Mostrar contrasena"
-              }
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-          {error && <p className="auth-error">{error}</p>}
-          <div className="text-right">
-            <Link
-              href="/forgot-password"
-              className="text-xs font-medium text-cyan-300 hover:underline"
-            >
-              Olvide mi contrasena
-            </Link>
-          </div>
-          <Button className="w-full" size="lg" type="submit" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
-          </Button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-slate-400">
-          No tienes cuenta?{" "}
-          <Link
-            href="/register"
-            className="font-semibold text-cyan-300 hover:underline"
-          >
-            Registrate
-          </Link>
-        </p>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="form-input form-input-with-icon"
+                placeholder="Contrasena"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((current) => !current)}
+                aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {error && <p className="auth-error">{error}</p>}
+            <div className="text-right">
+              <Link
+                href="/forgot-password"
+                className="text-xs font-medium text-cyan-300 hover:underline"
+              >
+                Olvide mi contrasena
+              </Link>
+            </div>
+            <Button className="w-full" size="lg" type="submit" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
+        </AuthPanel>
       </section>
-    </div>
+    </PageShell>
   );
 }

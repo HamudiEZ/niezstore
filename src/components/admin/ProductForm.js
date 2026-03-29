@@ -16,23 +16,26 @@ export default function ProductForm({
 }) {
   const categoryReady = Boolean(form.categoryId);
   const inputRef = useRef(null);
-  const [previews, setPreviews] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const acceptedTypes = useMemo(() => ["image/jpeg", "image/png"], []);
   const acceptLabel = "image/jpeg,image/png";
   const acceptHint = "Solo JPG o PNG.";
 
+  const previews = useMemo(
+    () =>
+      pendingImages.map((file) => ({
+        file,
+        url: URL.createObjectURL(file),
+      })),
+    [pendingImages]
+  );
+
   useEffect(() => {
-    const next = pendingImages.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-    }));
-    setPreviews(next);
     return () => {
-      next.forEach((item) => URL.revokeObjectURL(item.url));
+      previews.forEach((item) => URL.revokeObjectURL(item.url));
     };
-  }, [pendingImages]);
+  }, [previews]);
 
   const pushFiles = (fileList) => {
     const incoming = Array.from(fileList || []);
@@ -79,8 +82,8 @@ export default function ProductForm({
 
   return (
     <article className="soft-card p-4 md:p-5">
-      <h2 className="text-base font-bold text-slate-100">Crear producto</h2>
-      <p className="mt-1 text-xs text-slate-400">
+      <h2 className="text-base font-bold admin-title">Crear producto</h2>
+      <p className="mt-1 text-xs admin-subtitle">
         Guarda el producto base y luego agrega opciones y variantes.
       </p>
 
@@ -89,7 +92,7 @@ export default function ProductForm({
           name="name"
           value={form.name}
           onChange={onChange}
-          className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+          className="admin-input"
           placeholder="Nombre del producto"
         />
         <textarea
@@ -97,7 +100,7 @@ export default function ProductForm({
           value={form.description}
           onChange={onChange}
           rows={3}
-          className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+          className="admin-textarea"
           placeholder="Descripcion"
         />
         <div className="grid gap-2 md:grid-cols-2">
@@ -105,14 +108,14 @@ export default function ProductForm({
             name="brand"
             value={form.brand}
             onChange={onChange}
-            className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+            className="admin-input"
             placeholder="Marca (opcional)"
           />
           <input
             name="slug"
             value={form.slug}
             onChange={onChange}
-            className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+            className="admin-input"
             placeholder="Slug (opcional)"
           />
         </div>
@@ -121,7 +124,7 @@ export default function ProductForm({
             name="categoryId"
             value={form.categoryId}
             onChange={onChange}
-            className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+            className="admin-select"
           >
             {categories.length === 0 ? (
               <option value="">Crea una categoria primero</option>
@@ -133,19 +136,19 @@ export default function ProductForm({
               ))
             )}
           </select>
-          <label className="flex items-center gap-2 text-xs text-slate-300">
+          <label className="flex items-center gap-2 text-xs admin-subtitle">
             <input
               type="checkbox"
               name="isActive"
               checked={form.isActive}
               onChange={onChange}
-              className="h-4 w-4"
+              className="admin-checkbox h-4 w-4"
             />
             Producto activo
           </label>
         </div>
         <div>
-          <label className="text-xs text-slate-400">Imagenes del producto</label>
+          <label className="text-xs admin-subtitle">Imagenes del producto</label>
           <div className="mt-2">
             <input
               type="file"
@@ -168,32 +171,30 @@ export default function ProductForm({
                 isDragging ? "upload-drop--active" : ""
               }`}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-slate-950/60 text-lg text-cyan-300 transition group-hover:border-cyan-300 group-hover:text-cyan-200">
+              <span className="admin-upload-icon flex h-10 w-10 items-center justify-center rounded-full text-lg transition">
                 +
               </span>
               <span className="text-left">
-                <span className="block font-semibold text-slate-100">Subir imagenes</span>
-                <span className="block text-xs text-slate-400">
+                <span className="block font-semibold admin-title">Subir imagenes</span>
+                <span className="block text-xs admin-subtitle">
                   Arrastra o haz click para seleccionar. {acceptHint}
                 </span>
               </span>
             </button>
           </div>
-          <p className="mt-1 text-[11px] text-slate-500">
+          <p className="mt-1 text-[11px] admin-muted">
             {pendingImagesCount
               ? `${pendingImagesCount} archivo(s) listos para subir.`
               : "Se subiran cuando guardes el producto."}
           </p>
-          {uploadError ? (
-            <p className="text-xs text-rose-300">{uploadError}</p>
-          ) : null}
+          {uploadError ? <p className="admin-message admin-message--error">{uploadError}</p> : null}
         </div>
         {previews.length ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {previews.map((item, index) => (
               <div
                 key={`${item.file.name}-${item.file.lastModified}-${index}`}
-                className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/60"
+                className="admin-list-item overflow-hidden"
               >
                 <div className="relative h-32">
                   <Image
@@ -206,8 +207,8 @@ export default function ProductForm({
                 </div>
                 <div className="flex items-center justify-between gap-2 p-2">
                   <div className="min-w-0">
-                    <p className="truncate text-[11px] text-slate-300">{item.file.name}</p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="truncate text-[11px] admin-subtitle">{item.file.name}</p>
+                    <p className="text-[10px] admin-muted">
                       {(item.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
@@ -227,7 +228,7 @@ export default function ProductForm({
         <Button type="submit" className="w-full" disabled={disabled || !categoryReady}>
           {disabled ? "Creando..." : "Crear producto"}
         </Button>
-        {message ? <p className="text-xs text-cyan-300">{message}</p> : null}
+        {message ? <p className="admin-message">{message}</p> : null}
       </form>
     </article>
   );

@@ -23,22 +23,46 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Nombre de opcion requerido." }, { status: 400 });
   }
 
-  const option = await prisma.productOption.create({
-    data: {
-      name,
-      position,
-      productId,
-      values: {
-        create: values
-          .map((value, index) => ({
-            value: String(value ?? "").trim(),
-            position: index,
-          }))
-          .filter((entry) => entry.value.length > 0),
+  const normalizedValues = values
+    .map((value, index) => ({
+      value: String(value ?? "").trim(),
+      position: index,
+    }))
+    .filter((entry) => entry.value.length > 0);
+
+  const uniqueValues = [];
+  const valueSet = new Set();
+  for (const entry of normalizedValues) {
+    const key = entry.value.toLowerCase();
+    if (valueSet.has(key)) continue;
+    valueSet.add(key);
+    uniqueValues.push(entry);
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const option = await tx.productOption.create({
+      data: {
+        name,
+        position,
+        productId,
+        values: {
+          create: uniqueValues,
+        },
       },
-    },
-    include: { values: true },
+      include: { values: true },
+    });
+
+    const deactivated = await tx.productVariant.updateMany({
+      where: {
+        productId,
+        isActive: true,
+        optionSignature: "",
+      },
+      data: { isActive: false },
+    });
+
+    return { option, deactivatedBaseVariants: deactivated.count };
   });
 
-  return NextResponse.json({ option });
+  return NextResponse.json(result);
 }

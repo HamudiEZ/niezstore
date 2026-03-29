@@ -1,10 +1,16 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Button } from "../../components/ui/button";
+import PageHeader from "../../components/ui/page-header";
+import PageShell from "../../components/ui/page-shell";
+import SectionCard from "../../components/ui/section-card";
 
 export default function CheckoutPage() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">Checkout</h1>
+    <PageShell>
+      <PageHeader
+        title="Checkout"
+        description="Completa direccion, envio y pago para confirmar tu pedido."
+      />
 
       <div className="flex flex-wrap gap-2 text-xs font-medium">
         <span className="rounded-full bg-cyan-400 px-3 py-1 text-slate-950">1. Direccion</span>
@@ -14,22 +20,43 @@ export default function CheckoutPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-        <section className="soft-card p-4 md:p-5">
+        <SectionCard>
           <h2 className="text-sm font-semibold text-slate-100">Datos de envio</h2>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <input className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100" placeholder="Nombre completo" />
-            <input className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100" placeholder="Telefono" />
-            <input className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 md:col-span-2" placeholder="Direccion" />
-            <input className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100" placeholder="Ciudad" />
-            <input className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100" placeholder="Codigo postal" />
+            <input
+              className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+              placeholder="Nombre completo"
+            />
+            <input
+              className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+              placeholder="Telefono"
+            />
+            <input
+              className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 md:col-span-2"
+              placeholder="Direccion"
+            />
+            <input
+              className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+              placeholder="Ciudad"
+            />
+            <input
+              className="h-11 rounded-xl border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+              placeholder="Codigo postal"
+            />
           </div>
 
           <h2 className="mt-5 text-sm font-semibold text-slate-100">Metodo de pago</h2>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <button type="button" className="rounded-xl border border-cyan-400 bg-cyan-400/20 p-3 text-left text-sm font-semibold text-cyan-300">
+            <button
+              type="button"
+              className="rounded-xl border border-cyan-400 bg-cyan-400/20 p-3 text-left text-sm font-semibold text-cyan-300"
+            >
               Tarjeta de credito/debito
             </button>
-            <button type="button" className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-left text-sm font-semibold text-slate-300">
+            <button
+              type="button"
+              className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-left text-sm font-semibold text-slate-300"
+            >
               Efectivo / Pago local
             </button>
           </div>
@@ -42,9 +69,9 @@ export default function CheckoutPage() {
               </Button>
             </Link>
           </div>
-        </section>
+        </SectionCard>
 
-        <aside className="soft-card h-fit p-4 md:p-5">
+        <SectionCard as="aside" className="h-fit">
           <h2 className="text-sm font-semibold text-slate-100">Resumen de orden</h2>
           <div className="mt-3 space-y-2 text-sm text-slate-400">
             <div className="flex justify-between">
@@ -61,8 +88,8 @@ export default function CheckoutPage() {
             </div>
           </div>
           <p className="mt-2 text-xs text-slate-500">No se procesa pago real en esta demo.</p>
-        </aside>
+        </SectionCard>
       </div>
-    </div>
+    </PageShell>
   );
 }

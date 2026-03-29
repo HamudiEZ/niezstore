@@ -3,6 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { slugify } from "@/lib/slug";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 8;
+const MAX_PAGE_SIZE = 50;
+
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+function normalizeStatusFilter(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "active" || normalized === "inactive") return normalized;
+  return "all";
+}
+
 async function getUniqueSlug(base, excludeId) {
   let slug = base;
   let counter = 2;
@@ -14,21 +30,91 @@ async function getUniqueSlug(base, excludeId) {
   }
 }
 
-export async function GET() {
+export async function GET(request) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      category: true,
-      variants: true,
+  const searchParams = request.nextUrl.searchParams;
+  const search = String(searchParams.get("search") ?? "").trim();
+  const categoryId = String(searchParams.get("categoryId") ?? "").trim();
+  const status = normalizeStatusFilter(searchParams.get("status"));
+  const pageSize = Math.min(
+    parsePositiveInteger(searchParams.get("pageSize"), DEFAULT_PAGE_SIZE),
+    MAX_PAGE_SIZE
+  );
+  const requestedPage = parsePositiveInteger(
+    searchParams.get("page"),
+    DEFAULT_PAGE
+  );
+
+  const where = {};
+
+  if (categoryId && categoryId !== "all") {
+    where.categoryId = categoryId;
+  }
+
+  if (status === "active") {
+    where.isActive = true;
+  } else if (status === "inactive") {
+    where.isActive = false;
+  }
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { brand: { contains: search, mode: "insensitive" } },
+      { slug: { contains: search, mode: "insensitive" } },
+      { category: { name: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+
+  const [filteredTotal, totalAllProducts] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.count(),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const skip = (page - 1) * pageSize;
+
+  const [products, totalVariants, lowStockCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { createdAt: "desc" },
+      include: {
+        category: true,
+        variants: {
+          select: {
+            id: true,
+            stock: true,
+            isActive: true,
+          },
+        },
+      },
+    }),
+    prisma.productVariant.count(),
+    prisma.productVariant.count({ where: { stock: { lte: 5 } } }),
+  ]);
+
+  return NextResponse.json({
+    products,
+    pagination: {
+      page,
+      pageSize,
+      total: filteredTotal,
+      totalPages,
+      totalAll: totalAllProducts,
+    },
+    stats: {
+      totalProducts: totalAllProducts,
+      totalVariants,
+      lowStockCount,
     },
   });
-
-  return NextResponse.json({ products });
 }
 
 export async function POST(request) {

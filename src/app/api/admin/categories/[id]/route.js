@@ -14,6 +14,16 @@ async function getUniqueSlug(base, excludeId) {
   }
 }
 
+function isCategoryInUseError(error) {
+  if (error?.code === "P2003") return true;
+  const causeCode = error?.cause?.code || error?.cause?.originalCode;
+  if (causeCode === "23001" || causeCode === "23503") return true;
+  const message = String(
+    error?.cause?.originalMessage || error?.cause?.message || error?.message || ""
+  ).toLowerCase();
+  return message.includes("violates restrict setting of foreign key constraint");
+}
+
 export async function PUT(request, { params }) {
   const admin = await requireAdmin();
   if (!admin) {
@@ -82,6 +92,19 @@ export async function DELETE(request, { params }) {
     );
   }
 
-  await prisma.category.delete({ where: { id: categoryId } });
-  return NextResponse.json({ ok: true });
+  try {
+    await prisma.category.delete({ where: { id: categoryId } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (isCategoryInUseError(error)) {
+      return NextResponse.json(
+        {
+          error:
+            "No puedes eliminar esta categoria porque tiene productos asociados.",
+        },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 }

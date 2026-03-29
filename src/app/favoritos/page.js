@@ -1,12 +1,17 @@
+import PageHeader from "../../components/ui/page-header";
+import PageShell from "../../components/ui/page-shell";
+import SectionCard from "../../components/ui/section-card";
+
 export default function FavoritesPage() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">
-        Favoritos
-      </h1>
-      <section className="soft-card p-6 text-sm text-slate-400">
+    <PageShell>
+      <PageHeader
+        title="Favoritos"
+        description="Guarda productos para revisarlos rapido cuando quieras."
+      />
+      <SectionCard className="p-6 text-sm page-subtitle">
         Aun no tienes productos guardados como favoritos.
-      </section>
-    </div>
+      </SectionCard>
+    </PageShell>
   );
 }

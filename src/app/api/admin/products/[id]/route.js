@@ -34,12 +34,26 @@ export async function GET(request, { params }) {
         orderBy: { position: "asc" },
       },
       options: {
-        include: { values: true },
+        include: {
+          values: {
+            orderBy: { position: "asc" },
+          },
+        },
         orderBy: { position: "asc" },
       },
       variants: {
         include: {
-          variantOptions: true,
+          variantOptions: {
+            include: {
+              optionValue: {
+                include: {
+                  option: {
+                    select: { id: true, name: true },
+                  },
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
       },

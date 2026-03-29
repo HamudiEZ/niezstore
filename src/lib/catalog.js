@@ -110,6 +110,19 @@ export async function getProductById(productId) {
       variants: {
         where: { isActive: true },
         orderBy: { price: "asc" },
+        include: {
+          variantOptions: {
+            include: {
+              optionValue: {
+                select: {
+                  id: true,
+                  value: true,
+                  optionId: true,
+                },
+              },
+            },
+          },
+        },
       },
       options: {
         include: { values: true },

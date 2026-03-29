@@ -4,6 +4,9 @@ import CategoryPills from "../components/ecommerce/CategoryPills";
 import ProductCard from "../components/ecommerce/ProductCard";
 import { getFeaturedProducts, getPublicCategories } from "../lib/catalog";
 import { heroDeals, offerBanners } from "../lib/marketing-data";
+import PageShell from "../components/ui/page-shell";
+import PageHeader from "../components/ui/page-header";
+import SectionCard from "../components/ui/section-card";
 
 export default async function Home() {
   const [categories, featuredProducts] = await Promise.all([
@@ -12,10 +15,17 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="space-y-6 pb-8">
+    <PageShell gap="lg" className="pb-8">
       <div className="full-bleed">
         <HeroBanner deals={heroDeals} />
       </div>
+
+      <PageHeader
+        asCard={false}
+        eyebrow="Tienda online"
+        title="Descubre lo mejor de Niez Store"
+        description="Tecnologia, hogar, moda y mas, con una experiencia consistente en todo el catalogo."
+      />
 
       <div className="space-y-6">
         <section className="grid shop-card-grid sm:grid-cols-3">
@@ -35,20 +45,21 @@ export default async function Home() {
 
         <CategoryPills categories={categories} />
 
-        <section className="soft-card p-4 md:p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="section-title text-slate-100">Productos destacados</h2>
+        <SectionCard
+          title="Productos destacados"
+          titleClassName="section-title text-slate-100"
+          actions={
             <Link href="/ofertas" className="text-xs font-semibold text-cyan-300 hover:underline">
               Ver todas las ofertas
             </Link>
-          </div>
-
+          }
+        >
           <div className="grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
             {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-        </section>
+        </SectionCard>
 
         <section className="grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
           {offerBanners.map((banner) => (
@@ -66,6 +77,6 @@ export default async function Home() {
           ))}
         </section>
       </div>
-    </div>
+    </PageShell>
   );
 }

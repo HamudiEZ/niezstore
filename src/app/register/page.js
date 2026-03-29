@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import AuthPanel from "../../components/ui/auth-panel";
+import PageShell from "../../components/ui/page-shell";
+import AuthTopBar from "../../components/ui/auth-topbar";
+import AuthTrustPanel from "../../components/ui/auth-trust-panel";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -51,84 +55,90 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center py-6">
-      <section className="soft-card w-full max-w-md p-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">
-          Crear cuenta
-        </h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Compra mas rapido y guarda tus favoritos.
-        </p>
-
-        <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-          <input
-            className="form-input"
-            placeholder="Nombre completo"
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-            required
-          />
-          <input
-            type="email"
-            className="form-input"
-            placeholder="Correo electronico"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-          <div className="relative">
+    <PageShell gap="sm" className="mx-auto w-full max-w-5xl py-1">
+      <AuthTopBar />
+      <section className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <AuthTrustPanel />
+        <AuthPanel
+          className="mx-auto lg:ml-auto lg:mr-0"
+          title="Crear cuenta"
+          description="Compra mas rapido y guarda tus favoritos."
+          footer={
+            <>
+              Ya tienes cuenta?{" "}
+              <Link href="/login" className="font-semibold text-cyan-300 hover:underline">
+                Inicia sesion
+              </Link>
+            </>
+          }
+        >
+          <form className="space-y-3" onSubmit={handleSubmit}>
             <input
-              type={showPassword ? "text" : "password"}
-              className="form-input form-input-with-icon"
-              placeholder="Contrasena"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              className="form-input"
+              placeholder="Nombre completo"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
               required
             />
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={() => setShowPassword((current) => !current)}
-              aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-          <div className="relative">
             <input
-              type={showConfirmPassword ? "text" : "password"}
-              className="form-input form-input-with-icon"
-              placeholder="Confirmar contrasena"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
+              type="email"
+              className="form-input"
+              placeholder="Correo electronico"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={() => setShowConfirmPassword((current) => !current)}
-              aria-label={showConfirmPassword ? "Ocultar contrasena confirmada" : "Mostrar contrasena confirmada"}
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-          {error && <p className="auth-error">{error}</p>}
-          <Button className="w-full" size="lg" type="submit" disabled={loading}>
-            {loading ? "Creando..." : "Crear cuenta"}
-          </Button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-slate-400">
-          Ya tienes cuenta?{" "}
-          <Link href="/login" className="font-semibold text-cyan-300 hover:underline">
-            Inicia sesion
-          </Link>
-        </p>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="form-input form-input-with-icon"
+                placeholder="Contrasena"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((current) => !current)}
+                aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                className="form-input form-input-with-icon"
+                placeholder="Confirmar contrasena"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowConfirmPassword((current) => !current)}
+                aria-label={
+                  showConfirmPassword
+                    ? "Ocultar contrasena confirmada"
+                    : "Mostrar contrasena confirmada"
+                }
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {error && <p className="auth-error">{error}</p>}
+            <Button className="w-full" size="lg" type="submit" disabled={loading}>
+              {loading ? "Creando..." : "Crear cuenta"}
+            </Button>
+          </form>
+        </AuthPanel>
       </section>
-    </div>
+    </PageShell>
   );
 }

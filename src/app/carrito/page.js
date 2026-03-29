@@ -1,21 +1,25 @@
 import Link from "next/link";
 import { Button } from "../../components/ui/button";
+import PageHeader from "../../components/ui/page-header";
+import PageShell from "../../components/ui/page-shell";
+import SectionCard from "../../components/ui/section-card";
 
 export default function CartPage() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">
-        Carrito
-      </h1>
+    <PageShell>
+      <PageHeader
+        title="Carrito"
+        description="Revisa tus productos seleccionados antes de pasar al checkout."
+      />
 
-      <section className="soft-card p-6 text-sm text-slate-400">
+      <SectionCard className="p-6 text-sm page-subtitle">
         Tu carrito esta vacio por ahora.
         <div className="mt-4">
           <Link href="/categorias">
             <Button size="lg">Explorar productos</Button>
           </Link>
         </div>
-      </section>
-    </div>
+      </SectionCard>
+    </PageShell>
   );
 }
