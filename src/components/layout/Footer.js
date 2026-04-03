@@ -31,9 +31,6 @@ export default function Footer() {
             <Link href="/categorias" className="hover:text-cyan-300">
               Categorias
             </Link>
-            <Link href="/admin" className="hover:text-cyan-300">
-              Admin
-            </Link>
           </div>
         </div>
       </div>

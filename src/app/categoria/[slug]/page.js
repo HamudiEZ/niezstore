@@ -17,6 +17,8 @@ export default async function CategoryPage({ params, searchParams }) {
   const minPrice = resolvedSearchParams?.minPrice;
   const maxPrice = resolvedSearchParams?.maxPrice;
   const brand = resolvedSearchParams?.brand;
+  const sort = resolvedSearchParams?.sort;
+  const onSale = resolvedSearchParams?.onSale === "true";
 
   const [
     { category, products, totalItems, totalPages },
@@ -28,6 +30,8 @@ export default async function CategoryPage({ params, searchParams }) {
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       brand,
+      sort,
+      onSale,
     }),
     getCategoryBrands(slug)
   ]);

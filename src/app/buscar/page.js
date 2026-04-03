@@ -15,6 +15,8 @@ export default async function SearchPage({ searchParams }) {
   const minPrice = resolvedSearchParams?.minPrice;
   const maxPrice = resolvedSearchParams?.maxPrice;
   const brand = resolvedSearchParams?.brand;
+  const sort = resolvedSearchParams?.sort;
+  const onSale = resolvedSearchParams?.onSale === "true";
 
   const [{ products, totalItems, totalPages }, brands] = await Promise.all([
     searchProducts(q, { 
@@ -22,7 +24,9 @@ export default async function SearchPage({ searchParams }) {
       pageSize: 20, 
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      brand 
+      brand,
+      sort,
+      onSale
     }),
     getSearchBrands(q)
   ]);

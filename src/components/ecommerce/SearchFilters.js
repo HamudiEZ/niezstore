@@ -11,35 +11,43 @@ export default function SearchFilters({ brands = [] }) {
 
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
-  const [selectedBrand, setSelectedBrand] = useState(searchParams.get("brand") || "");
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const applyFilters = () => {
-    let currentParams = new URLSearchParams(searchParams.toString());
-    
-    if (minPrice) currentParams.set("minPrice", minPrice);
-    else currentParams.delete("minPrice");
-    
-    if (maxPrice) currentParams.set("maxPrice", maxPrice);
-    else currentParams.delete("maxPrice");
-    
-    if (selectedBrand) currentParams.set("brand", selectedBrand);
-    else currentParams.delete("brand");
+  // Sync state if URL changes from outside (e.g., clear all)
+  useEffect(() => {
+    setMinPrice(searchParams.get("minPrice") || "");
+    setMaxPrice(searchParams.get("maxPrice") || "");
+  }, [searchParams]);
 
-    currentParams.delete("page");
-    router.push(`${pathname}?${currentParams.toString()}`);
-    setIsMobileOpen(false);
-  };
+  const updateUrl = useCallback((changes) => {
+    const current = new URLSearchParams(searchParams.toString());
+    Object.entries(changes).forEach(([k, v]) => {
+      if (v === "" || v === false || v === null || v === undefined) {
+        current.delete(k);
+      } else {
+        current.set(k, v);
+      }
+    });
+    current.delete("page");
+    router.push(`${pathname}?${current.toString()}`);
+  }, [searchParams, pathname, router]);
+
+  // Debounce prices
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentMin = searchParams.get("minPrice") || "";
+      const currentMax = searchParams.get("maxPrice") || "";
+      if (minPrice !== currentMin || maxPrice !== currentMax) {
+        updateUrl({ minPrice, maxPrice });
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [minPrice, maxPrice, searchParams, updateUrl]);
 
   const clearFilters = () => {
-    setMinPrice("");
-    setMaxPrice("");
-    setSelectedBrand("");
-    
     const params = new URLSearchParams();
     const q = searchParams.get("q");
     if (q) params.set("q", q);
-    
     router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
@@ -92,6 +100,39 @@ export default function SearchFilters({ brands = [] }) {
             </div>
           </div>
 
+          {/* Sort By */}
+          <div>
+            <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+              Ordenar por
+            </h3>
+            <select
+              value={searchParams.get("sort") || ""}
+              onChange={(e) => updateUrl({ sort: e.target.value })}
+              className="w-full appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
+            >
+              <option value="">Más relevantes</option>
+              <option value="newest">Más recientes</option>
+              <option value="oldest">Más antiguos</option>
+              <option value="name_asc">Nombre A-Z</option>
+              <option value="name_desc">Nombre Z-A</option>
+            </select>
+          </div>
+
+          {/* Offers */}
+          <div>
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={searchParams.get("onSale") === "true"}
+                onChange={(e) => updateUrl({ onSale: e.target.checked })}
+                className="h-4 w-4 rounded border-[var(--border)] text-cyan-500 focus:ring-cyan-500 bg-[var(--surface-soft)]"
+              />
+              <span className="text-sm font-semibold text-[var(--foreground)]">
+                Solo ofertas y descuentos
+              </span>
+            </label>
+          </div>
+
           {/* Brands */}
           {brands.length > 0 && (
             <div>
@@ -104,11 +145,11 @@ export default function SearchFilters({ brands = [] }) {
                     <input
                       type="radio"
                       name="brand"
-                      checked={selectedBrand === brand}
-                      onChange={() => setSelectedBrand(brand)}
+                      checked={searchParams.get("brand") === brand}
+                      onChange={() => updateUrl({ brand })}
                       className="h-4 w-4 rounded border-[var(--border)] text-cyan-500 focus:ring-cyan-500 bg-[var(--surface-soft)]"
                     />
-                    <span className={`text-sm ${selectedBrand === brand ? "font-bold text-cyan-500" : "text-[var(--foreground)]"}`}>
+                    <span className={`text-sm ${searchParams.get("brand") === brand ? "font-bold text-cyan-500" : "text-[var(--foreground)]"}`}>
                       {brand}
                     </span>
                   </label>
@@ -120,16 +161,10 @@ export default function SearchFilters({ brands = [] }) {
           {/* Actions */}
           <div className="space-y-3 pt-4">
             <button
-              onClick={applyFilters}
-              className="w-full rounded-xl bg-cyan-400 py-3 text-sm font-bold text-[#000] transition hover:bg-cyan-300"
-            >
-              Aplicar Filtros
-            </button>
-            <button
               onClick={clearFilters}
               className="w-full text-sm font-medium text-[var(--muted)] underline underline-offset-4 hover:text-[var(--foreground)]"
             >
-              Limpiar todo
+              Limpiar filtros
             </button>
           </div>
         </div>

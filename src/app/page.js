@@ -31,21 +31,21 @@ export default async function Home() {
       <div className="space-y-6">
         <section className="grid shop-card-grid sm:grid-cols-3">
           <article className="soft-card p-4 text-sm">
-            <p className="font-semibold text-slate-100">Envio confiable</p>
-            <p className="mt-1 text-slate-400">
-              Cobertura en todo el pais y seguimiento en tiempo real.
+            <p className="font-semibold text-[var(--foreground)]">Envío confiable</p>
+            <p className="mt-1 text-[var(--muted)]">
+              Cobertura en todo el país y seguimiento en tiempo real.
             </p>
           </article>
           <article className="soft-card p-4 text-sm">
-            <p className="font-semibold text-slate-100">Pagos seguros</p>
-            <p className="mt-1 text-slate-400">
+            <p className="font-semibold text-[var(--foreground)]">Pagos seguros</p>
+            <p className="mt-1 text-[var(--muted)]">
               Tarjeta, transferencia y efectivo en puntos autorizados.
             </p>
           </article>
           <article className="soft-card p-4 text-sm">
-            <p className="font-semibold text-slate-100">Soporte 24/7</p>
-            <p className="mt-1 text-slate-400">
-              Te ayudamos antes, durante y despues de cada compra.
+            <p className="font-semibold text-[var(--foreground)]">Soporte 24/7</p>
+            <p className="mt-1 text-[var(--muted)]">
+              Te ayudamos antes, durante y después de cada compra.
             </p>
           </article>
         </section>

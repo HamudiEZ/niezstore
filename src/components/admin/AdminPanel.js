@@ -9,6 +9,7 @@ import ProductsList from "./ProductsList";
 import ProductOptions from "./ProductOptions";
 import ProductVariants from "./ProductVariants";
 import ProductEditForm from "./ProductEditForm";
+import OrdersManager from "./OrdersManager";
 
 const EMPTY_CATEGORY_FORM = {
   name: "",
@@ -85,6 +86,11 @@ const ADMIN_SECTIONS = [
     id: "products",
     title: "Productos",
     description: "Creacion, filtros, opciones y variantes de productos.",
+  },
+  {
+    id: "orders",
+    title: "Ventas",
+    description: "Monitoreo de pedidos, ingresos y datos de clientes.",
   },
 ];
 
@@ -1119,7 +1125,7 @@ export default function AdminPanel() {
       activeTab={activeSection}
       onTabChange={setActiveSection}
     >
-      {activeSection === "categories" ? (
+      {activeSection === "categories" && (
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <CategoryForm
             form={categoryForm}
@@ -1168,7 +1174,11 @@ export default function AdminPanel() {
             </button>
           </AdminSectionCard>
         </section>
-      ) : (
+      )}
+
+      {activeSection === "orders" && <OrdersManager />}
+
+      {activeSection === "products" && (
         <>
           <section className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
             <ProductForm

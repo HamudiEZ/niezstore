@@ -10,10 +10,15 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import PageShell from "../ui/page-shell";
 import ProductCard from "./ProductCard";
+import { useFavoritesStore } from "@/store/favoritesStore";
+import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
+import { Heart } from "lucide-react";
+import clsx from "clsx";
 
 const formatPrice = (value) =>
   typeof value === "number" && Number.isFinite(value)
@@ -125,6 +130,58 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
     buildDefaultSelections(product),
   );
   const [quantity, setQuantity] = useState(1);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const { isFavorite, toggleFavorite } = useFavoritesStore();
+  const { isAuthenticated } = useAuthStore();
+  const isFav = mounted ? isFavorite(product.id) : false;
+
+  const handleToggleFavorite = () => {
+    toggleFavorite({
+      id: product.id,
+      name: product.name,
+      slug: product.slug || product.id,
+      brand: product.brand,
+      imageUrl: product.images?.[0]?.url || product.variants?.[0]?.imageUrl || "",
+      price: selectedVariant?.price,
+      previousPrice: selectedVariant?.compareAtPrice,
+      discountPercentage: getDiscountPercentage(selectedVariant?.compareAtPrice, selectedVariant?.price),
+    }, isAuthenticated);
+  };
+
+  const { addItem: addCartItem } = useCartStore();
+  const [addedFeedback, setAddedFeedback] = useState(false);
+
+  const handleAddToCart = () => {
+    if (isOutOfStock || !selectedVariant) return;
+
+    addCartItem(
+      {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        brand: product.brand,
+      },
+      {
+        id: selectedVariant.id,
+        sku: selectedVariant.sku,
+        price: selectedVariant.price,
+        compareAtPrice: selectedVariant.compareAtPrice,
+        imageUrl: selectedVariant.imageUrl,
+        stock: selectedVariant.stock,
+        summary: selectedVariantSummary
+      },
+      parseInt(quantity) || 1,
+      isAuthenticated
+    );
+
+    setAddedFeedback(true);
+    setTimeout(() => setAddedFeedback(false), 2000);
+  };
 
   const selectedVariant = useMemo(() => {
     if (effectiveVariants.length === 0) return null;
@@ -355,9 +412,23 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
             </span>
           </div>
 
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-100 md:text-3xl lg:text-4xl">
-            {product.name}
-          </h1>
+          <div className="flex items-start justify-between gap-4 mt-4">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-100 md:text-3xl lg:text-4xl">
+              {product.name}
+            </h1>
+            <button
+              onClick={handleToggleFavorite}
+              className={clsx(
+                "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-all",
+                isFav
+                  ? "border-rose-500/20 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20"
+                  : "border-slate-800 bg-surface-soft/30 text-slate-400 hover:text-rose-400 hover:border-slate-700"
+              )}
+              aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+            >
+              <Heart className="h-6 w-6" fill={isFav ? "currentColor" : "none"} />
+            </button>
+          </div>
 
           <div className="mt-6 flex flex-wrap items-end gap-3 border-b border-slate-800 pb-6">
             <span className="text-4xl font-extrabold tracking-tight text-slate-100">
@@ -507,20 +578,30 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
               <div className="flex w-full flex-col gap-2 sm:flex-row">
                 <Button
                   size="lg"
-                  className="w-full text-sm font-bold"
+                  className={clsx(
+                    "w-full text-sm font-bold transition-all",
+                    addedFeedback ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""
+                  )}
                   disabled={isOutOfStock}
+                  onClick={handleAddToCart}
                 >
-                  {isOutOfStock ? "No disponible" : "Agregar al carrito"}
+                  {isOutOfStock ? "No disponible" : addedFeedback ? "¡Agregado al carrito!" : "Agregar al carrito"}
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full text-sm font-bold"
-                  disabled={isOutOfStock}
-                >
-                  Comprar ahora
-                </Button>
+                <Link href="/checkout" className="w-full">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full text-sm font-bold"
+                    disabled={isOutOfStock}
+                    onClick={() => {
+                        if (!isOutOfStock) handleAddToCart();
+                    }}
+                  >
+                    Comprar ahora
+                  </Button>
+                </Link>
               </div>
+
             </div>
 
             <p className="text-center text-[10px] text-slate-500 sm:text-left">

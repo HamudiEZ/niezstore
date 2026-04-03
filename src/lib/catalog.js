@@ -104,6 +104,8 @@ export async function getProductsByCategorySlug(slug, options = {}) {
     minPrice,
     maxPrice,
     brand,
+    sort,
+    onSale,
   } = options;
 
   const skip = (Math.max(1, page) - 1) * pageSize;
@@ -123,24 +125,30 @@ export async function getProductsByCategorySlug(slug, options = {}) {
     where.brand = { equals: brand, mode: "insensitive" };
   }
 
-  // Add price filters
-  if (minPrice || maxPrice) {
+  // Add price and sale filters
+  if (minPrice || maxPrice || onSale) {
     where.variants = {
       some: {
         isActive: true,
         AND: [
           minPrice ? { price: { gte: Number(minPrice) } } : {},
           maxPrice ? { price: { lte: Number(maxPrice) } } : {},
+          onSale ? { compareAtPrice: { not: null } } : {},
         ],
       },
     };
   }
 
+  let orderBy = { createdAt: "desc" };
+  if (sort === "oldest") orderBy = { createdAt: "asc" };
+  if (sort === "name_asc") orderBy = { name: "asc" };
+  if (sort === "name_desc") orderBy = { name: "desc" };
+
   const [products, totalItems] = await Promise.all([
     prisma.product.findMany({
       where,
       include: productCardInclude,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip,
       take: pageSize,
     }),
@@ -227,6 +235,8 @@ export async function searchProducts(query, options = {}) {
     minPrice,
     maxPrice,
     brand,
+    sort,
+    onSale,
   } = options;
 
   const skip = (Math.max(1, page) - 1) * pageSize;
@@ -247,23 +257,29 @@ export async function searchProducts(query, options = {}) {
   }
 
   // Add price filters (filtering based on the cheapest variant)
-  if (minPrice || maxPrice) {
+  if (minPrice || maxPrice || onSale) {
     where.variants = {
       some: {
         isActive: true,
         AND: [
           minPrice ? { price: { gte: Number(minPrice) } } : {},
           maxPrice ? { price: { lte: Number(maxPrice) } } : {},
+          onSale ? { compareAtPrice: { not: null } } : {},
         ],
       },
     };
   }
 
+  let orderBy = { createdAt: "desc" };
+  if (sort === "oldest") orderBy = { createdAt: "asc" };
+  if (sort === "name_asc") orderBy = { name: "asc" };
+  if (sort === "name_desc") orderBy = { name: "desc" };
+
   const [products, totalItems] = await Promise.all([
     prisma.product.findMany({
       where,
       include: productCardInclude,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip,
       take: pageSize,
     }),

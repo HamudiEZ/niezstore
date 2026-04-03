@@ -13,6 +13,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ModeToggle from "../ui/mode-toggle";
 import GlobalSearch from "./GlobalSearch";
+import { useCartStore } from "@/store/cartStore";
+import { useFavoritesStore } from "@/store/favoritesStore";
+import { useAuthStore } from "@/store/authStore";
 
 const navItems = [
   { href: "/", label: "Inicio" },
@@ -38,26 +41,24 @@ export default function Navbar() {
   const accountMenuRef = useRef(null);
 
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user, isAuthenticated, checkAuth, logout: storeLogout } = useAuthStore();
   const [accountOpen, setAccountOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const totalCartItems = useCartStore((state) => state.getTotalItems());
 
   useEffect(() => {
-    let active = true;
-    const loadMe = async () => {
-      try {
-        const response = await fetch("/api/auth/me", { cache: "no-store" });
-        const payload = await response.json();
-        if (active) setUser(payload.user ?? null);
-      } catch {
-        if (active) setUser(null);
-      }
-    };
+    setMounted(true);
+    checkAuth();
+  }, [pathname, checkAuth]);
 
-    loadMe();
-    return () => {
-      active = false;
-    };
-  }, [pathname]);
+  // Sync Logic on Login
+  useEffect(() => {
+    if (isAuthenticated && mounted) {
+      // Trigger sync for both stores
+      useCartStore.getState().syncWithDB();
+      useFavoritesStore.getState().syncWithDB();
+    }
+  }, [isAuthenticated, mounted]);
 
   useEffect(() => {
     const onPointerDown = (event) => {
@@ -81,8 +82,12 @@ export default function Navbar() {
   const hideNavbar = hiddenNavbarRoutes.has(pathname);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
+    await storeLogout();
+    
+    // Clear LOCAL stores only on logout (don't clear DB)
+    useCartStore.getState().clearCart(false);
+    useFavoritesStore.getState().clearFavorites();
+
     setAccountOpen(false);
     setOpen(false);
     router.replace("/");
@@ -134,9 +139,11 @@ export default function Navbar() {
               aria-label="Carrito"
             >
               <ShoppingCart className="h-4 w-4" />
-              <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
-                3
-              </span>
+              {mounted && totalCartItems > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-slate-950">
+                  {totalCartItems > 9 ? "9+" : totalCartItems}
+                </span>
+              )}
             </Link>
 
             {user ? (

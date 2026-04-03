@@ -1,8 +1,13 @@
+"use client";
+
 import clsx from "clsx";
 import { Heart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import RatingStars from "./RatingStars";
+import { useFavoritesStore } from "@/store/favoritesStore";
+import { useAuthStore } from "@/store/authStore";
+import { useState, useEffect } from "react";
 
 export default function ProductCard({ product, variant = "grid" }) {
   const isRail = variant === "rail";
@@ -16,6 +21,30 @@ export default function ProductCard({ product, variant = "grid" }) {
     typeof product.previousPrice === "number"
       ? product.previousPrice.toFixed(2)
       : null;
+
+  const { isFavorite, toggleFavorite } = useFavoritesStore();
+  const { isAuthenticated } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isFav = mounted ? isFavorite(product.id) : false;
+
+  const handleFavoriteClick = (e) => {
+    e.preventDefault();
+    toggleFavorite({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      brand: product.brand,
+      imageUrl: product.imageUrl,
+      price: product.price,
+      previousPrice: product.previousPrice,
+      discountPercentage: product.discountPercentage,
+    }, isAuthenticated);
+  };
 
   return (
     <Link
@@ -65,10 +94,16 @@ export default function ProductCard({ product, variant = "grid" }) {
           ) : null}
           <button
             type="button"
-            className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/85 text-slate-300 shadow-sm transition hover:text-rose-400"
-            aria-label="Agregar a favoritos"
+            onClick={handleFavoriteClick}
+            className={clsx(
+              "absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition",
+              isFav 
+                ? "bg-rose-50 text-rose-500 hover:bg-rose-100 dark:bg-rose-500/20 dark:text-rose-400"
+                : "bg-slate-950/85 text-slate-300 hover:text-rose-400"
+            )}
+            aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
           >
-            <Heart className="h-4 w-4" />
+            <Heart className="h-4 w-4" fill={isFav ? "currentColor" : "none"} />
           </button>
         </div>
       </div>
