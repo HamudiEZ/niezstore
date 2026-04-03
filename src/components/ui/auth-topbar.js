@@ -1,24 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import ModeToggle from "./mode-toggle";
 
 export default function AuthTopBar() {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") return "dark";
-    return window.localStorage.getItem("theme") === "light" ? "light" : "dark";
-  });
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("theme-light", theme === "light");
-    window.localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
-  };
-
   return (
     <header className="soft-card px-4 py-3 md:px-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -32,18 +18,7 @@ export default function AuthTopBar() {
         </Link>
 
         <nav className="flex items-center gap-2 text-xs">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 text-slate-300 transition hover:border-cyan-400/60 hover:text-cyan-300"
-            aria-label="Cambiar tema"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </button>
+          <ModeToggle />
           <Link
             href="/"
             className="inline-flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1.5 font-semibold text-slate-300 transition hover:border-cyan-400/60 hover:text-cyan-300"

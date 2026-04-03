@@ -1,18 +1,18 @@
-﻿"use client";
+"use client";
 
 import {
   Heart,
   Menu,
-  Moon,
   Search,
   ShoppingCart,
-  Sun,
   User,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ModeToggle from "../ui/mode-toggle";
+import GlobalSearch from "./GlobalSearch";
 
 const navItems = [
   { href: "/", label: "Inicio" },
@@ -27,10 +27,6 @@ const hiddenNavbarRoutes = new Set([
   "/forgot-password",
 ]);
 
-function getInitialTheme() {
-  return window.localStorage.getItem("theme") === "light" ? "light" : "dark";
-}
-
 function getInitialFromUser(user) {
   const source = user?.fullName?.trim() || user?.email || "U";
   return source.charAt(0).toUpperCase();
@@ -40,29 +36,10 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const accountMenuRef = useRef(null);
-  const themeHydratedRef = useRef(false);
 
   const [open, setOpen] = useState(false);
-  const [theme, setTheme] = useState("dark");
   const [user, setUser] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
-
-  useEffect(() => {
-    const rafId = window.requestAnimationFrame(() => {
-      const savedTheme = getInitialTheme();
-      themeHydratedRef.current = true;
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("theme-light", savedTheme === "light");
-    });
-
-    return () => window.cancelAnimationFrame(rafId);
-  }, []);
-
-  useEffect(() => {
-    if (!themeHydratedRef.current) return;
-    document.documentElement.classList.toggle("theme-light", theme === "light");
-    window.localStorage.setItem("theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     let active = true;
@@ -103,10 +80,6 @@ export default function Navbar() {
   );
   const hideNavbar = hiddenNavbarRoutes.has(pathname);
 
-  const toggleTheme = () => {
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
-  };
-
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
@@ -122,7 +95,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/85 backdrop-blur">
-      <div className="w-full px-4 py-3 md:px-8 lg:px-10">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-3 md:px-8 lg:px-10">
         <div className="relative flex items-center gap-3">
           <button
             type="button"
@@ -143,29 +116,11 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden min-w-0 md:flex md:flex-1 md:justify-center md:px-4 lg:px-6">
-            <div className="relative w-full max-w-[620px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Buscar productos"
-                className="h-11 w-full rounded-xl border border-slate-700 bg-slate-900/70 pl-10 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
-              />
-            </div>
+            <GlobalSearch className="max-w-[480px]" />
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1 text-slate-300 md:ml-0 md:gap-2">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 hover:bg-slate-800 nav-hover"
-              aria-label="Cambiar tema"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
+            <ModeToggle className="h-10" />
             <Link
               href="/favoritos"
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 hover:bg-slate-800 nav-hover"
@@ -246,14 +201,7 @@ export default function Navbar() {
         </div>
 
         <div className="mt-3 md:hidden">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar productos"
-              className="h-11 w-full rounded-xl border border-slate-700 bg-slate-900/70 pl-10 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
-            />
-          </div>
+          <GlobalSearch />
         </div>
 
         <nav className="mt-3 hidden items-center gap-5 border-t border-slate-800 pt-3 text-sm font-medium text-slate-300 md:flex">
@@ -308,4 +256,3 @@ export default function Navbar() {
     </header>
   );
 }
-

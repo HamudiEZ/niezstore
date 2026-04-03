@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import {
   SESSION_COOKIE_NAME,
   createSession,
   hashPassword,
   normalizeEmail,
 } from "@/lib/auth";
+import { validatePasswordStrength } from "@/lib/password-policy";
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
@@ -15,23 +16,27 @@ export async function POST(request) {
 
   if (!fullName || !email || !password) {
     return NextResponse.json(
-      { error: "Completa nombre, correo y contrasena." },
-      { status: 400 }
+      { error: "Completa nombre, correo y contrase\u00f1a." },
+      { status: 400 },
     );
   }
 
-  if (password.length < 6) {
+  const passwordValidation = validatePasswordStrength(password, {
+    email,
+    fullName,
+  });
+  if (!passwordValidation.isValid) {
     return NextResponse.json(
-      { error: "La contrasena debe tener al menos 6 caracteres." },
-      { status: 400 }
+      { error: passwordValidation.errors[0] },
+      { status: 400 },
     );
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json(
-      { error: "Ese correo ya esta registrado." },
-      { status: 409 }
+      { error: "Ese correo ya est\u00e1 registrado." },
+      { status: 409 },
     );
   }
 

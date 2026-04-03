@@ -13,13 +13,13 @@ export default function ForgotPasswordPage() {
         <AuthTrustPanel />
         <AuthPanel
           className="mx-auto lg:ml-auto lg:mr-0"
-          title="Recuperar contrasena"
+          title="Recuperar contraseña"
           description="Ingresa tu correo y te enviaremos instrucciones para restablecer tu acceso."
           footer={
             <>
-              Recordaste tu contrasena?{" "}
+              ¿Recordaste tu contraseña?{" "}
               <Link href="/login" className="font-semibold text-cyan-300 hover:underline">
-                Inicia sesion
+                Inicia sesión
               </Link>
             </>
           }
@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
             <input
               type="email"
               className="form-input"
-              placeholder="Correo electronico"
+              placeholder="Correo electrónico"
               required
             />
             <Button className="w-full" size="lg" type="submit">

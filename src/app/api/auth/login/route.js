@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import {
   SESSION_COOKIE_NAME,
   createSession,
   normalizeEmail,
   verifyPassword,
 } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import {
   checkLoginRateLimit,
   clearLoginFailures,
   getLoginRateLimitKey,
   registerLoginFailure,
 } from "@/lib/rate-limit";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
@@ -21,8 +21,8 @@ export async function POST(request) {
 
   if (!email || !password) {
     return NextResponse.json(
-      { error: "Correo y contrasena son obligatorios." },
-      { status: 400 }
+      { error: "Correo y contrase\u00f1a son obligatorios." },
+      { status: 400 },
     );
   }
 
@@ -32,7 +32,7 @@ export async function POST(request) {
       {
         error: `Demasiados intentos fallidos. Intenta nuevamente en ${rateLimit.retryAfterSeconds}s.`,
       },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -40,8 +40,8 @@ export async function POST(request) {
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     registerLoginFailure(rateLimitKey);
     return NextResponse.json(
-      { error: "Credenciales invalidas." },
-      { status: 401 }
+      { error: "Correo o contrase\u00f1a incorrectos." },
+      { status: 401 },
     );
   }
   clearLoginFailures(rateLimitKey);

@@ -1,17 +1,18 @@
-﻿import Link from "next/link";
-import HeroBanner from "../components/ecommerce/HeroBanner";
+import Link from "next/link";
 import CategoryPills from "../components/ecommerce/CategoryPills";
-import ProductCard from "../components/ecommerce/ProductCard";
-import { getFeaturedProducts, getPublicCategories } from "../lib/catalog";
-import { heroDeals, offerBanners } from "../lib/marketing-data";
-import PageShell from "../components/ui/page-shell";
+import HeroBanner from "../components/ecommerce/HeroBanner";
+import ProductCarousel from "../components/ecommerce/ProductCarousel";
 import PageHeader from "../components/ui/page-header";
+import PageShell from "../components/ui/page-shell";
 import SectionCard from "../components/ui/section-card";
+import { getFeaturedProducts, getNewestProducts, getPublicCategories } from "../lib/catalog";
+import { heroDeals, offerBanners } from "../lib/marketing-data";
 
 export default async function Home() {
-  const [categories, featuredProducts] = await Promise.all([
+  const [categories, featuredProducts, newestProducts] = await Promise.all([
     getPublicCategories(),
-    getFeaturedProducts(8),
+    getFeaturedProducts(12),
+    getNewestProducts(12),
   ]);
 
   return (
@@ -31,15 +32,21 @@ export default async function Home() {
         <section className="grid shop-card-grid sm:grid-cols-3">
           <article className="soft-card p-4 text-sm">
             <p className="font-semibold text-slate-100">Envio confiable</p>
-            <p className="mt-1 text-slate-400">Cobertura en todo el pais y seguimiento en tiempo real.</p>
+            <p className="mt-1 text-slate-400">
+              Cobertura en todo el pais y seguimiento en tiempo real.
+            </p>
           </article>
           <article className="soft-card p-4 text-sm">
             <p className="font-semibold text-slate-100">Pagos seguros</p>
-            <p className="mt-1 text-slate-400">Tarjeta, transferencia y efectivo en puntos autorizados.</p>
+            <p className="mt-1 text-slate-400">
+              Tarjeta, transferencia y efectivo en puntos autorizados.
+            </p>
           </article>
           <article className="soft-card p-4 text-sm">
             <p className="font-semibold text-slate-100">Soporte 24/7</p>
-            <p className="mt-1 text-slate-400">Te ayudamos antes, durante y despues de cada compra.</p>
+            <p className="mt-1 text-slate-400">
+              Te ayudamos antes, durante y despues de cada compra.
+            </p>
           </article>
         </section>
 
@@ -49,16 +56,15 @@ export default async function Home() {
           title="Productos destacados"
           titleClassName="section-title text-slate-100"
           actions={
-            <Link href="/ofertas" className="text-xs font-semibold text-cyan-300 hover:underline">
+            <Link
+              href="/ofertas"
+              className="text-xs font-semibold text-cyan-300 hover:underline"
+            >
               Ver todas las ofertas
             </Link>
           }
         >
-          <div className="grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <ProductCarousel products={featuredProducts} />
         </SectionCard>
 
         <section className="grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
@@ -68,14 +74,34 @@ export default async function Home() {
               className={`rounded-2xl bg-gradient-to-r ${banner.color} p-4 text-white shadow-lg`}
             >
               <p className="text-xs font-medium text-white/80">Promocion</p>
-              <p className="mt-2 text-lg font-extrabold leading-tight">{banner.title}</p>
+              <p className="mt-2 text-lg font-extrabold leading-tight">
+                {banner.title}
+              </p>
               <p className="mt-1 text-sm text-white/90">{banner.subtitle}</p>
-              <Link href="/ofertas" className="mt-4 inline-flex rounded-lg bg-black/25 px-3 py-2 text-xs font-semibold backdrop-blur hover:bg-black/35">
+              <Link
+                href="/ofertas"
+                className="mt-4 inline-flex rounded-lg bg-black/25 px-3 py-2 text-xs font-semibold backdrop-blur hover:bg-black/35"
+              >
                 Ver promo
               </Link>
             </article>
           ))}
         </section>
+
+        <SectionCard
+          title="Productos nuevos"
+          titleClassName="section-title text-slate-100"
+          actions={
+            <Link
+              href="/categorias"
+              className="text-xs font-semibold text-cyan-300 hover:underline"
+            >
+              Ver todo el catálogo
+            </Link>
+          }
+        >
+          <ProductCarousel products={newestProducts} />
+        </SectionCard>
       </div>
     </PageShell>
   );
