@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Button } from "../ui/button";
 
 export default function ProductVariants({
@@ -56,6 +57,73 @@ export default function ProductVariants({
       .filter(Boolean);
 
     return parts.length ? parts.join(" | ") : "Variante base";
+  };
+
+  const renderImagePicker = (currentUrl, isEditing = false) => {
+    const images = selectedProduct.images || [];
+    
+    if (images.length === 0) {
+      return (
+        <p className="admin-muted text-[10px]">
+          No hay imágenes subidas. Sube fotos primero para asignarlas.
+        </p>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        <label className="text-[11px] font-bold uppercase tracking-wider admin-subtitle">
+          Imagen de variante
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {/* None Option */}
+          <button
+            type="button"
+            onClick={() => {
+              const e = { target: { name: "imageUrl", value: "" } };
+              isEditing ? onEditChange(e) : onChange(e);
+            }}
+            className={`relative flex h-16 w-16 items-center justify-center rounded-lg border-2 text-[10px] transition ${
+              !currentUrl
+                ? "border-cyan-500 bg-cyan-500/10 text-cyan-500"
+                : "border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-900"
+            }`}
+          >
+            Ninguna
+          </button>
+          
+          {/* Product Images */}
+          {images.map((img) => (
+            <button
+              key={img.id}
+              type="button"
+              onClick={() => {
+                const e = { target: { name: "imageUrl", value: img.url } };
+                isEditing ? onEditChange(e) : onChange(e);
+              }}
+              className={`group relative h-16 w-16 overflow-hidden rounded-lg border-2 transition ${
+                currentUrl === img.url
+                  ? "border-cyan-500 shadow-md shadow-cyan-500/20"
+                  : "border-transparent hover:border-slate-300 dark:hover:border-slate-700"
+              }`}
+            >
+              <Image
+                src={img.url}
+                alt="Seleccionable"
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
+              {currentUrl === img.url && (
+                <div className="absolute inset-0 flex items-center justify-center bg-cyan-500/10">
+                  <div className="h-2 w-2 rounded-full bg-cyan-500" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -125,13 +193,7 @@ export default function ProductVariants({
             placeholder="SKU (opcional, codigo interno)"
           />
         </div>
-        <input
-          name="imageUrl"
-          value={form.imageUrl}
-          onChange={onChange}
-          className="admin-input"
-          placeholder="URL de imagen de variante (opcional)"
-        />
+        {renderImagePicker(form.imageUrl)}
         <p className="text-[11px] admin-muted">
           SKU es un identificador interno para tu inventario (opcional).
         </p>
@@ -279,13 +341,7 @@ export default function ProductVariants({
                           placeholder="SKU"
                         />
                       </div>
-                      <input
-                        name="imageUrl"
-                        value={editForm.imageUrl}
-                        onChange={onEditChange}
-                        className="admin-input h-9 text-xs"
-                        placeholder="URL de imagen (opcional)"
-                      />
+                      {renderImagePicker(editForm.imageUrl, true)}
                       <label className="flex items-center gap-2 text-xs admin-subtitle">
                         <input
                           type="checkbox"

@@ -1,32 +1,18 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { X, ChevronDown, Filter } from "lucide-react";
 
 export default function SearchFilters({ brands = [] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [selectedBrand, setSelectedBrand] = useState(searchParams.get("brand") || "");
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  const createQueryString = useCallback(
-    (name, value) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(name, value);
-      } else {
-        params.delete(name);
-      }
-      // Reset page when filtering
-      params.delete("page");
-      return params.toString();
-    },
-    [searchParams]
-  );
 
   const applyFilters = () => {
     let currentParams = new URLSearchParams(searchParams.toString());
@@ -41,7 +27,7 @@ export default function SearchFilters({ brands = [] }) {
     else currentParams.delete("brand");
 
     currentParams.delete("page");
-    router.push(`/buscar?${currentParams.toString()}`);
+    router.push(`${pathname}?${currentParams.toString()}`);
     setIsMobileOpen(false);
   };
 
@@ -49,7 +35,12 @@ export default function SearchFilters({ brands = [] }) {
     setMinPrice("");
     setMaxPrice("");
     setSelectedBrand("");
-    router.push(`/buscar?q=${searchParams.get("q") || ""}`);
+    
+    const params = new URLSearchParams();
+    const q = searchParams.get("q");
+    if (q) params.set("q", q);
+    
+    router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   return (

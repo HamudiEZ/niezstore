@@ -81,24 +81,78 @@ export async function getCategoryBySlug(slug) {
   return prisma.category.findUnique({ where: { slug } });
 }
 
-export async function getProductsByCategorySlug(slug) {
-  if (!slug) return { category: null, products: [] };
-  const category = await prisma.category.findUnique({
-    where: { slug },
-    include: {
-      products: {
-        where: { isActive: true, variants: { some: { isActive: true } } },
-        orderBy: { createdAt: "desc" },
-        include: productCardInclude,
-      },
+export async function getCategoryBrands(slug) {
+  if (!slug) return [];
+  const results = await prisma.product.findMany({
+    where: {
+      category: { slug },
+      isActive: true,
+      brand: { not: null },
     },
+    select: { brand: true },
+    distinct: ["brand"],
   });
+  return results.map((r) => r.brand).filter(Boolean).sort();
+}
 
-  if (!category) return { category: null, products: [] };
+export async function getProductsByCategorySlug(slug, options = {}) {
+  if (!slug) return { category: null, products: [], totalItems: 0, totalPages: 0 };
+
+  const {
+    page = 1,
+    pageSize = 20,
+    minPrice,
+    maxPrice,
+    brand,
+  } = options;
+
+  const skip = (Math.max(1, page) - 1) * pageSize;
+
+  // First get the category
+  const category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) return { category: null, products: [], totalItems: 0, totalPages: 0 };
+
+  const where = {
+    categoryId: category.id,
+    isActive: true,
+    variants: { some: { isActive: true } },
+  };
+
+  // Add brand filter if provided
+  if (brand) {
+    where.brand = { equals: brand, mode: "insensitive" };
+  }
+
+  // Add price filters
+  if (minPrice || maxPrice) {
+    where.variants = {
+      some: {
+        isActive: true,
+        AND: [
+          minPrice ? { price: { gte: Number(minPrice) } } : {},
+          maxPrice ? { price: { lte: Number(maxPrice) } } : {},
+        ],
+      },
+    };
+  }
+
+  const [products, totalItems] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: productCardInclude,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.product.count({ where }),
+  ]);
 
   return {
     category,
-    products: category.products.map(toProductCard).filter(Boolean),
+    products: products.map(toProductCard).filter(Boolean),
+    totalItems,
+    totalPages: Math.ceil(totalItems / pageSize),
+    currentPage: page,
   };
 }
 

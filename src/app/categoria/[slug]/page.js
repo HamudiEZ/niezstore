@@ -1,16 +1,36 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import ProductCard from "../../../components/ecommerce/ProductCard";
-import { getProductsByCategorySlug } from "../../../lib/catalog";
-import PageShell from "../../../components/ui/page-shell";
-import PageHeader from "../../../components/ui/page-header";
-import SectionCard from "../../../components/ui/section-card";
+import ProductCard from "@/components/ecommerce/ProductCard";
+import { getProductsByCategorySlug, getCategoryBrands } from "@/lib/catalog";
+import PageShell from "@/components/ui/page-shell";
+import PageHeader from "@/components/ui/page-header";
+import SectionCard from "@/components/ui/section-card";
+import SearchFilters from "@/components/ecommerce/SearchFilters";
+import SearchPagination from "@/components/ui/search-pagination";
 
-export default async function CategoryPage({ params }) {
+export default async function CategoryPage({ params, searchParams }) {
   const resolvedParams = await params;
-  const { category, products } = await getProductsByCategorySlug(
-    resolvedParams?.slug
-  );
+  const resolvedSearchParams = await searchParams;
+  
+  const slug = resolvedParams?.slug;
+  const page = Number(resolvedSearchParams?.page ?? 1);
+  const minPrice = resolvedSearchParams?.minPrice;
+  const maxPrice = resolvedSearchParams?.maxPrice;
+  const brand = resolvedSearchParams?.brand;
+
+  const [
+    { category, products, totalItems, totalPages },
+    brands
+  ] = await Promise.all([
+    getProductsByCategorySlug(slug, {
+      page,
+      pageSize: 20,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      brand,
+    }),
+    getCategoryBrands(slug)
+  ]);
 
   if (!category) {
     return notFound();
@@ -18,48 +38,64 @@ export default async function CategoryPage({ params }) {
 
   return (
     <PageShell>
-      <div className="text-xs text-slate-500">Inicio / Categoria / {category.name}</div>
+      {/* Breadcrumbs */}
+      <div className="mb-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+        <Link href="/" className="hover:text-cyan-500 transition">Inicio</Link>
+        <span>/</span>
+        <Link href="/categorias" className="hover:text-cyan-500 transition">Categorías</Link>
+        <span>/</span>
+        <span className="text-cyan-500">{category.name}</span>
+      </div>
 
-      <PageHeader title={category.name} description={category.description || "Sin descripcion"} />
+      <PageHeader 
+        title={category.name} 
+        description={category.description || `Explora nuestra selección de ${category.name.toLowerCase()}.`} 
+      />
 
-      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <SectionCard as="aside" className="h-fit p-4 text-sm">
-          <p className="font-semibold text-slate-100">Filtros</p>
-          <div className="mt-3 space-y-3 text-xs text-slate-400">
-            <div>
-              <p className="font-semibold text-slate-300">Rango de precio</p>
-              <p>$10 - $2000</p>
-            </div>
-            <div>
-              <p className="font-semibold text-slate-300">Marca</p>
-              <p>Samsung, Apple, NVIDIA, Nike</p>
-            </div>
-            <div>
-              <p className="font-semibold text-slate-300">Ordenar por</p>
-              <p>Relevancia, Menor precio, Mayor precio</p>
-            </div>
-            <p className="text-[11px] text-slate-500">
-              UI de filtros, aun sin backend.
-            </p>
-          </div>
-        </SectionCard>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
+        {/* Filters Sidebar - Reusing SearchFilters */}
+        <div className="lg:sticky lg:top-24 lg:h-fit">
+          <SearchFilters brands={brands} />
+        </div>
 
-        <SectionCard>
+        {/* Results Area */}
+        <div className="flex flex-col gap-8">
           {products.length === 0 ? (
-            <div className="notice-muted flex flex-wrap items-center justify-center gap-2 text-center text-sm">
-              <span>No hay productos en esta categoria todavia.</span>
-              <Link href="/" className="accent-link font-semibold">
-                Volver al inicio
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)]/20 py-16 px-6 text-center">
+              <h2 className="text-lg font-bold text-[var(--foreground)]">
+                No hay productos
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                No se encontraron productos en esta categoría con los filtros aplicados.
+              </p>
+              <Link 
+                href={`/categoria/${slug}`} 
+                className="mt-6 rounded-xl bg-cyan-400 px-6 py-2.5 text-xs font-bold text-[#000] transition hover:bg-cyan-300"
+              >
+                Limpiar filtros
               </Link>
             </div>
           ) : (
-            <div className="grid shop-card-grid sm:grid-cols-2 xl:grid-cols-3">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              {/* Product Grid - Exactly matches Landing Page */}
+              <div className="grid shop-card-grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} variant="rail" />
+                ))}
+              </div>
+
+              {/* Pagination Area */}
+              <div className="mt-4 flex justify-center border-t border-[var(--border)] py-8">
+                <SearchPagination 
+                  page={page} 
+                  totalPages={totalPages} 
+                  totalItems={totalItems} 
+                  pageSize={20} 
+                />
+              </div>
+            </>
           )}
-        </SectionCard>
+        </div>
       </div>
     </PageShell>
   );
