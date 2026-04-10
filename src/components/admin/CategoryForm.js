@@ -1,5 +1,7 @@
-﻿import { Button } from "../ui/button";
+import { Button } from "../ui/button";
 import Pagination from "../ui/pagination";
+import { INPUT_LIMITS } from "@/lib/input-limits";
+import CharCount from "./CharCount";
 
 export default function CategoryForm({
   form,
@@ -44,28 +46,40 @@ export default function CategoryForm({
       </p>
 
       <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-        <input
-          name="name"
-          value={form.name}
-          onChange={onChange}
-          className="admin-input"
-          placeholder="Nombre de la categoria"
-        />
-        <input
-          name="slug"
-          value={form.slug}
-          onChange={onChange}
-          className="admin-input"
-          placeholder="Slug (opcional)"
-        />
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={onChange}
-          rows={3}
-          className="admin-textarea"
-          placeholder="Descripcion (opcional)"
-        />
+        <div className="admin-input-wrap">
+          <input
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            maxLength={INPUT_LIMITS.categoryName}
+            className="admin-input"
+            placeholder="Nombre de la categoria"
+          />
+          <CharCount value={form.name} max={INPUT_LIMITS.categoryName} />
+        </div>
+        <div className="admin-input-wrap">
+          <input
+            name="slug"
+            value={form.slug}
+            onChange={onChange}
+            maxLength={INPUT_LIMITS.slug}
+            className="admin-input"
+            placeholder="Slug (opcional)"
+          />
+          <CharCount value={form.slug} max={INPUT_LIMITS.slug} />
+        </div>
+        <div className="admin-input-wrap">
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={onChange}
+            rows={3}
+            maxLength={INPUT_LIMITS.categoryDescription}
+            className="admin-textarea"
+            placeholder="Descripcion (opcional)"
+          />
+          <CharCount value={form.description} max={INPUT_LIMITS.categoryDescription} />
+        </div>
         <Button type="submit" className="w-full" disabled={disabled}>
           {disabled ? "Creando..." : "Crear categoria"}
         </Button>
@@ -93,6 +107,7 @@ export default function CategoryForm({
         <input
           value={searchTerm}
           onChange={(event) => onSearchTermChange?.(event.target.value)}
+          maxLength={INPUT_LIMITS.search}
           className="admin-input mt-2"
           placeholder="Buscar categoria por nombre, slug o descripcion"
         />
@@ -104,10 +119,10 @@ export default function CategoryForm({
                 <div key={category.id} className="admin-list-item p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-semibold admin-title">{category.name}</p>
-                      <p className="text-xs admin-muted">/{category.slug}</p>
+                      <p className="truncate text-sm font-semibold admin-title">{category.name}</p>
+                      <p className="truncate text-xs admin-muted">/{category.slug}</p>
                       {category.description ? (
-                        <p className="mt-1 text-xs admin-subtitle">{category.description}</p>
+                        <p className="mt-1 line-clamp-2 text-xs admin-subtitle">{category.description}</p>
                       ) : null}
                     </div>
                     <div className="flex gap-2">
@@ -131,28 +146,40 @@ export default function CategoryForm({
 
                   {editingCategoryId === category.id ? (
                     <form className="mt-3 space-y-2" onSubmit={onSubmitEdit}>
-                      <input
-                        name="name"
-                        value={editForm?.name ?? ""}
-                        onChange={onEditChange}
-                        className="admin-input h-9 text-xs"
-                        placeholder="Nombre"
-                      />
-                      <input
-                        name="slug"
-                        value={editForm?.slug ?? ""}
-                        onChange={onEditChange}
-                        className="admin-input h-9 text-xs"
-                        placeholder="Slug"
-                      />
-                      <textarea
-                        name="description"
-                        value={editForm?.description ?? ""}
-                        onChange={onEditChange}
-                        rows={2}
-                        className="admin-textarea text-xs"
-                        placeholder="Descripcion"
-                      />
+                        <div className="admin-input-wrap">
+                          <input
+                            name="name"
+                            value={editForm?.name ?? ""}
+                            onChange={onEditChange}
+                            maxLength={INPUT_LIMITS.categoryName}
+                            className="admin-input h-9 text-xs"
+                            placeholder="Nombre"
+                          />
+                          <CharCount value={editForm?.name} max={INPUT_LIMITS.categoryName} />
+                        </div>
+                        <div className="admin-input-wrap">
+                          <input
+                            name="slug"
+                            value={editForm?.slug ?? ""}
+                            onChange={onEditChange}
+                            maxLength={INPUT_LIMITS.slug}
+                            className="admin-input h-9 text-xs"
+                            placeholder="Slug"
+                          />
+                          <CharCount value={editForm?.slug} max={INPUT_LIMITS.slug} />
+                        </div>
+                        <div className="admin-input-wrap">
+                          <textarea
+                            name="description"
+                            value={editForm?.description ?? ""}
+                            onChange={onEditChange}
+                            rows={2}
+                            maxLength={INPUT_LIMITS.categoryDescription}
+                            className="admin-textarea text-xs"
+                            placeholder="Descripcion"
+                          />
+                          <CharCount value={editForm?.description} max={INPUT_LIMITS.categoryDescription} />
+                        </div>
                       <div className="flex items-center gap-2">
                         <Button
                           type="submit"

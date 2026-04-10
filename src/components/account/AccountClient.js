@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import AccountSidebar from "./AccountSidebar";
 import AccountProfile from "./AccountProfile";
 import AccountOrders from "./AccountOrders";
@@ -8,7 +9,15 @@ import AccountAddresses from "./AccountAddresses";
 import AccountSecurity from "./AccountSecurity";
 
 export default function AccountClient({ user, orders }) {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("profile");
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && ["profile", "orders", "addresses", "security"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const renderContent = () => {
     switch (activeTab) {

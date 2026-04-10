@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
+import { INPUT_LIMITS } from "@/lib/input-limits";
 
 export async function PUT(request, { params }) {
   const admin = await requireAdmin();
@@ -37,10 +38,21 @@ export async function PUT(request, { params }) {
   if (!name) {
     return NextResponse.json({ error: "Nombre de opcion requerido." }, { status: 400 });
   }
-
-  if (position != null && (!Number.isFinite(position) || position < 0)) {
+  if (name.length > INPUT_LIMITS.optionName) {
     return NextResponse.json(
-      { error: "Posicion de opcion invalida." },
+      { error: `Nombre de opcion demasiado largo (max ${INPUT_LIMITS.optionName}).` },
+      { status: 400 }
+    );
+  }
+
+  if (
+    position != null &&
+    (!Number.isFinite(position) ||
+      position < 0 ||
+      position > INPUT_LIMITS.optionPositionMax)
+  ) {
+    return NextResponse.json(
+      { error: `Posicion de opcion invalida (0 a ${INPUT_LIMITS.optionPositionMax}).` },
       { status: 400 }
     );
   }

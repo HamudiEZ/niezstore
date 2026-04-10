@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { slugify } from "@/lib/slug";
+import { INPUT_LIMITS } from "@/lib/input-limits";
 
 async function getUniqueSlug(base, excludeId) {
   let slug = base;
@@ -47,6 +48,24 @@ export async function PUT(request, { params }) {
 
   if (!name) {
     return NextResponse.json({ error: "Nombre requerido." }, { status: 400 });
+  }
+  if (name.length > INPUT_LIMITS.categoryName) {
+    return NextResponse.json(
+      { error: `Nombre demasiado largo (max ${INPUT_LIMITS.categoryName}).` },
+      { status: 400 }
+    );
+  }
+  if (description && description.length > INPUT_LIMITS.categoryDescription) {
+    return NextResponse.json(
+      { error: `Descripcion demasiado larga (max ${INPUT_LIMITS.categoryDescription}).` },
+      { status: 400 }
+    );
+  }
+  if (rawSlug.length > INPUT_LIMITS.slug) {
+    return NextResponse.json(
+      { error: `Slug demasiado largo (max ${INPUT_LIMITS.slug}).` },
+      { status: 400 }
+    );
   }
 
   const existingByName = await prisma.category.findFirst({

@@ -5,6 +5,9 @@ import PageHeader from "@/components/ui/page-header";
 import PageShell from "@/components/ui/page-shell";
 import AccountClient from "@/components/account/AccountClient";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Mi Cuenta | Niez Store",
 };

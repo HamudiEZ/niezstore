@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
+import { INPUT_LIMITS } from "@/lib/input-limits";
 
 export async function PATCH(request, { params }) {
   const admin = await requireAdmin();
@@ -32,7 +33,7 @@ export async function PATCH(request, { params }) {
 
   if (Object.prototype.hasOwnProperty.call(body, "price")) {
     const price = Number(body.price);
-    if (!Number.isFinite(price) || price <= 0) {
+    if (!Number.isFinite(price) || price <= 0 || price > INPUT_LIMITS.priceMax) {
       return NextResponse.json({ error: "Precio invalido." }, { status: 400 });
     }
     data.price = price;
@@ -40,14 +41,21 @@ export async function PATCH(request, { params }) {
 
   if (Object.prototype.hasOwnProperty.call(body, "stock")) {
     const stock = Number(body.stock);
-    if (!Number.isFinite(stock) || stock < 0) {
+    if (!Number.isFinite(stock) || stock < 0 || stock > INPUT_LIMITS.stockMax) {
       return NextResponse.json({ error: "Stock invalido." }, { status: 400 });
     }
     data.stock = stock;
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "sku")) {
-    data.sku = String(body.sku ?? "").trim() || null;
+    const nextSku = String(body.sku ?? "").trim() || null;
+    if (nextSku && nextSku.length > INPUT_LIMITS.sku) {
+      return NextResponse.json(
+        { error: `SKU demasiado largo (max ${INPUT_LIMITS.sku}).` },
+        { status: 400 }
+      );
+    }
+    data.sku = nextSku;
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "compareAtPrice")) {
@@ -58,7 +66,9 @@ export async function PATCH(request, { params }) {
 
     if (
       compareAtPrice != null &&
-      (!Number.isFinite(compareAtPrice) || compareAtPrice <= 0)
+      (!Number.isFinite(compareAtPrice) ||
+        compareAtPrice <= 0 ||
+        compareAtPrice > INPUT_LIMITS.priceMax)
     ) {
       return NextResponse.json(
         { error: "Precio comparativo invalido." },
@@ -70,7 +80,14 @@ export async function PATCH(request, { params }) {
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "imageUrl")) {
-    data.imageUrl = String(body.imageUrl ?? "").trim() || null;
+    const nextImageUrl = String(body.imageUrl ?? "").trim() || null;
+    if (nextImageUrl && nextImageUrl.length > INPUT_LIMITS.imageUrl) {
+      return NextResponse.json(
+        { error: `URL de imagen demasiado larga (max ${INPUT_LIMITS.imageUrl}).` },
+        { status: 400 }
+      );
+    }
+    data.imageUrl = nextImageUrl;
   }
 
   if (Object.keys(data).length === 0) {

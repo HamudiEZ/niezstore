@@ -1,5 +1,7 @@
 import { Button } from "../ui/button";
 import ProductImages from "./ProductImages";
+import { INPUT_LIMITS } from "@/lib/input-limits";
+import CharCount from "./CharCount";
 
 export default function ProductEditForm({
   form,
@@ -32,36 +34,52 @@ export default function ProductEditForm({
       </div>
 
       <form className="space-y-3" onSubmit={onSubmit}>
-        <input
-          name="name"
-          value={form.name}
-          onChange={onChange}
-          className="admin-input"
-          placeholder="Nombre del producto"
-        />
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={onChange}
-          rows={3}
-          className="admin-textarea"
-          placeholder="Descripcion"
-        />
+        <div className="admin-input-wrap">
+          <input
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            maxLength={INPUT_LIMITS.productName}
+            className="admin-input"
+            placeholder="Nombre del producto"
+          />
+          <CharCount value={form.name} max={INPUT_LIMITS.productName} />
+        </div>
+        <div className="admin-input-wrap">
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={onChange}
+            rows={3}
+            maxLength={INPUT_LIMITS.productDescription}
+            className="admin-textarea"
+            placeholder="Descripcion"
+          />
+          <CharCount value={form.description} max={INPUT_LIMITS.productDescription} />
+        </div>
         <div className="grid gap-2 md:grid-cols-2">
-          <input
-            name="brand"
-            value={form.brand}
-            onChange={onChange}
-            className="admin-input"
-            placeholder="Marca (opcional)"
-          />
-          <input
-            name="slug"
-            value={form.slug}
-            onChange={onChange}
-            className="admin-input"
-            placeholder="Slug (opcional)"
-          />
+          <div className="admin-input-wrap">
+            <input
+              name="brand"
+              value={form.brand}
+              onChange={onChange}
+              maxLength={INPUT_LIMITS.productBrand}
+              className="admin-input"
+              placeholder="Marca (opcional)"
+            />
+            <CharCount value={form.brand} max={INPUT_LIMITS.productBrand} />
+          </div>
+          <div className="admin-input-wrap">
+            <input
+              name="slug"
+              value={form.slug}
+              onChange={onChange}
+              maxLength={INPUT_LIMITS.slug}
+              className="admin-input"
+              placeholder="Slug (opcional)"
+            />
+            <CharCount value={form.slug} max={INPUT_LIMITS.slug} />
+          </div>
         </div>
         <div className="grid gap-2 md:grid-cols-2">
           <select

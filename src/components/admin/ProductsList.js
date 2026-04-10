@@ -1,4 +1,5 @@
 import Pagination from "../ui/pagination";
+import { INPUT_LIMITS } from "@/lib/input-limits";
 
 export default function ProductsList({
   loading,
@@ -41,6 +42,7 @@ export default function ProductsList({
         <input
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.target.value)}
+          maxLength={INPUT_LIMITS.search}
           className="admin-input"
           placeholder="Buscar por nombre, marca o categoria"
         />
@@ -85,9 +87,9 @@ export default function ProductsList({
                   : "admin-list-item"
               }`}
             >
-              <div>
-                <p className="text-sm font-semibold admin-title">{product.name}</p>
-                <p className="text-xs admin-subtitle">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold admin-title">{product.name}</p>
+                <p className="truncate text-xs admin-subtitle">
                   {product.brand || "Sin marca"} - {product.category?.name || "Sin categoria"}
                 </p>
                 <p className="truncate text-[11px] admin-muted">/{product.slug}</p>

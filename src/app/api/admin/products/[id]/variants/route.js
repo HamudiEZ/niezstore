@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
+import { INPUT_LIMITS } from "@/lib/input-limits";
 
 function buildOptionSignature(optionValueIds) {
   const ids = Array.isArray(optionValueIds) ? optionValueIds.map(String) : [];
@@ -43,12 +44,32 @@ export async function POST(request, { params }) {
     ? body.optionValueIds.map(String)
     : [];
 
-  if (!Number.isFinite(price) || price <= 0) {
+  if (!Number.isFinite(price) || price <= 0 || price > INPUT_LIMITS.priceMax) {
     return NextResponse.json({ error: "Precio invalido." }, { status: 400 });
   }
+  if (
+    compareAtPrice != null &&
+    (!Number.isFinite(compareAtPrice) ||
+      compareAtPrice <= 0 ||
+      compareAtPrice > INPUT_LIMITS.priceMax)
+  ) {
+    return NextResponse.json({ error: "Precio comparativo invalido." }, { status: 400 });
+  }
 
-  if (!Number.isFinite(stock) || stock < 0) {
+  if (!Number.isFinite(stock) || stock < 0 || stock > INPUT_LIMITS.stockMax) {
     return NextResponse.json({ error: "Stock invalido." }, { status: 400 });
+  }
+  if (sku && sku.length > INPUT_LIMITS.sku) {
+    return NextResponse.json(
+      { error: `SKU demasiado largo (max ${INPUT_LIMITS.sku}).` },
+      { status: 400 }
+    );
+  }
+  if (imageUrl && imageUrl.length > INPUT_LIMITS.imageUrl) {
+    return NextResponse.json(
+      { error: `URL de imagen demasiado larga (max ${INPUT_LIMITS.imageUrl}).` },
+      { status: 400 }
+    );
   }
 
   const product = await prisma.product.findUnique({

@@ -139,17 +139,17 @@ export default function SearchFilters({ brands = [] }) {
               <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
                 Marca
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-hidden">
                 {brands.map((brand) => (
-                  <label key={brand} className="flex cursor-pointer items-center gap-3">
+                  <label key={brand} className="flex cursor-pointer items-center gap-3 overflow-hidden min-w-0">
                     <input
                       type="radio"
                       name="brand"
                       checked={searchParams.get("brand") === brand}
                       onChange={() => updateUrl({ brand })}
-                      className="h-4 w-4 rounded border-[var(--border)] text-cyan-500 focus:ring-cyan-500 bg-[var(--surface-soft)]"
+                      className="shrink-0 h-4 w-4 rounded border-[var(--border)] text-cyan-500 focus:ring-cyan-500 bg-[var(--surface-soft)]"
                     />
-                    <span className={`text-sm ${searchParams.get("brand") === brand ? "font-bold text-cyan-500" : "text-[var(--foreground)]"}`}>
+                    <span className={`text-sm truncate min-w-0 ${searchParams.get("brand") === brand ? "font-bold text-cyan-500" : "text-[var(--foreground)]"}`} title={brand}>
                       {brand}
                     </span>
                   </label>

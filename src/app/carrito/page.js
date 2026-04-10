@@ -96,11 +96,11 @@ export default function CartPage() {
               
               <div className="flex flex-1 flex-col justify-between">
                 <div className="flex justify-between gap-4">
-                  <div>
-                    <Link href={`/producto/${item.product.slug || item.product.id}`} className="font-bold text-base text-[var(--foreground)] hover:text-cyan-400 transition">
+                  <div className="min-w-0">
+                    <Link href={`/producto/${item.product.slug || item.product.id}`} className="font-bold text-base text-[var(--foreground)] hover:text-cyan-400 transition line-clamp-2" style={{ overflowWrap: "anywhere" }}>
                       {item.product.name}
                     </Link>
-                    <p className="text-xs text-[var(--muted)] mt-1">{item.variant.summary}</p>
+                    <p className="text-xs text-[var(--muted)] mt-1 truncate">{item.variant.summary}</p>
                   </div>
                   <button onClick={() => removeItem(item.variant.id, isAuthenticated)} className="text-[var(--muted)] hover:text-rose-400 transition" aria-label="Eliminar producto">
                     <Trash2 className="h-5 w-5" />

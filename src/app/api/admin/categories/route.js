@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { slugify } from "@/lib/slug";
+import { INPUT_LIMITS, normalizeSearchTerm } from "@/lib/input-limits";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 5;
@@ -56,7 +57,7 @@ export async function GET(request) {
     });
   }
 
-  const search = String(searchParams.get("search") ?? "").trim();
+  const search = normalizeSearchTerm(searchParams.get("search"));
   const pageSize = Math.min(
     parsePositiveInteger(searchParams.get("pageSize"), DEFAULT_PAGE_SIZE),
     MAX_PAGE_SIZE
@@ -119,6 +120,24 @@ export async function POST(request) {
 
   if (!name) {
     return NextResponse.json({ error: "Nombre requerido." }, { status: 400 });
+  }
+  if (name.length > INPUT_LIMITS.categoryName) {
+    return NextResponse.json(
+      { error: `Nombre demasiado largo (max ${INPUT_LIMITS.categoryName}).` },
+      { status: 400 }
+    );
+  }
+  if (description && description.length > INPUT_LIMITS.categoryDescription) {
+    return NextResponse.json(
+      { error: `Descripcion demasiado larga (max ${INPUT_LIMITS.categoryDescription}).` },
+      { status: 400 }
+    );
+  }
+  if (rawSlug.length > INPUT_LIMITS.slug) {
+    return NextResponse.json(
+      { error: `Slug demasiado largo (max ${INPUT_LIMITS.slug}).` },
+      { status: 400 }
+    );
   }
 
   const existingByName = await prisma.category.findFirst({

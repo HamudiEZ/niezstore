@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { slugify } from "@/lib/slug";
+import { INPUT_LIMITS } from "@/lib/input-limits";
 
 async function getUniqueSlug(base, excludeId) {
   let slug = base;
@@ -102,6 +103,30 @@ export async function PUT(request, { params }) {
   if (!name || !description || !categoryId) {
     return NextResponse.json(
       { error: "Nombre, descripcion y categoria son obligatorios." },
+      { status: 400 }
+    );
+  }
+  if (name.length > INPUT_LIMITS.productName) {
+    return NextResponse.json(
+      { error: `Nombre demasiado largo (max ${INPUT_LIMITS.productName}).` },
+      { status: 400 }
+    );
+  }
+  if (description.length > INPUT_LIMITS.productDescription) {
+    return NextResponse.json(
+      { error: `Descripcion demasiado larga (max ${INPUT_LIMITS.productDescription}).` },
+      { status: 400 }
+    );
+  }
+  if (brand && brand.length > INPUT_LIMITS.productBrand) {
+    return NextResponse.json(
+      { error: `Marca demasiado larga (max ${INPUT_LIMITS.productBrand}).` },
+      { status: 400 }
+    );
+  }
+  if (rawSlug.length > INPUT_LIMITS.slug) {
+    return NextResponse.json(
+      { error: `Slug demasiado largo (max ${INPUT_LIMITS.slug}).` },
       { status: 400 }
     );
   }

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { INPUT_LIMITS } from "@/lib/input-limits";
+import CharCount from "./CharCount";
 
 const EMPTY_OPTION_EDIT = {
   name: "",
@@ -113,20 +115,28 @@ export default function ProductOptions({
             Define atributos que cambian la variante (Color, RAM, Tamano).
           </p>
         </div>
-        <input
-          name="name"
-          value={form.name}
-          onChange={onChange}
-          className="admin-input"
-          placeholder="Nombre de la opcion (ej: Color, RAM, Tamano)"
-        />
-        <input
-          name="values"
-          value={form.values}
-          onChange={onChange}
-          className="admin-input"
-          placeholder="Valores (ej: Negro, Blanco, Azul)"
-        />
+        <div className="admin-input-wrap">
+          <input
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            maxLength={INPUT_LIMITS.optionName}
+            className="admin-input"
+            placeholder="Nombre de la opcion (ej: Color, RAM, Tamano)"
+          />
+          <CharCount value={form.name} max={INPUT_LIMITS.optionName} />
+        </div>
+        <div className="admin-input-wrap">
+          <input
+            name="values"
+            value={form.values}
+            onChange={onChange}
+            maxLength={INPUT_LIMITS.optionValuesCsv}
+            className="admin-input"
+            placeholder="Valores (ej: Negro, Blanco, Azul)"
+          />
+          <CharCount value={form.values} max={INPUT_LIMITS.optionValuesCsv} />
+        </div>
         <p className="text-[11px] admin-muted">Escribe los valores separados por coma.</p>
         <details className="admin-note px-3 py-2 text-xs">
           <summary className="cursor-pointer admin-subtitle">Orden avanzado (opcional)</summary>
@@ -136,6 +146,8 @@ export default function ProductOptions({
               value={form.position}
               onChange={onChange}
               type="number"
+              min="0"
+              max={INPUT_LIMITS.optionPositionMax}
               className="admin-input"
               placeholder="Orden de la opcion (opcional)"
             />
@@ -192,18 +204,24 @@ export default function ProductOptions({
                       className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_130px_auto]"
                       onSubmit={(event) => handleSubmitOptionEdit(event, option.id)}
                     >
-                      <input
-                        name="name"
-                        value={optionEditForm.name}
-                        onChange={handleOptionEditChange}
-                        className="admin-input h-9 text-xs"
-                        placeholder="Nombre"
-                      />
+                      <div className="admin-input-wrap">
+                        <input
+                          name="name"
+                          value={optionEditForm.name}
+                          onChange={handleOptionEditChange}
+                          maxLength={INPUT_LIMITS.optionName}
+                          className="admin-input h-9 text-xs"
+                          placeholder="Nombre"
+                        />
+                        <CharCount value={optionEditForm.name} max={INPUT_LIMITS.optionName} />
+                      </div>
                       <input
                         name="position"
                         value={optionEditForm.position}
                         onChange={handleOptionEditChange}
                         type="number"
+                        min="0"
+                        max={INPUT_LIMITS.optionPositionMax}
                         className="admin-input h-9 text-xs"
                         placeholder="Posicion"
                       />
@@ -245,18 +263,24 @@ export default function ProductOptions({
                                   handleSubmitValueEdit(event, option.id, value.id)
                                 }
                               >
-                                <input
-                                  name="value"
-                                  value={valueEditForm.value}
-                                  onChange={handleValueEditChange}
-                                  className="admin-input h-8 text-xs"
-                                  placeholder="Valor"
-                                />
+                                <div className="admin-input-wrap">
+                                  <input
+                                    name="value"
+                                    value={valueEditForm.value}
+                                    onChange={handleValueEditChange}
+                                    maxLength={INPUT_LIMITS.optionValue}
+                                    className="admin-input h-8 text-xs"
+                                    placeholder="Valor"
+                                  />
+                                  <CharCount value={valueEditForm.value} max={INPUT_LIMITS.optionValue} />
+                                </div>
                                 <input
                                   name="position"
                                   value={valueEditForm.position}
                                   onChange={handleValueEditChange}
                                   type="number"
+                                  min="0"
+                                  max={INPUT_LIMITS.optionPositionMax}
                                   className="admin-input h-8 text-xs"
                                   placeholder="Pos"
                                 />
@@ -315,12 +339,16 @@ export default function ProductOptions({
                   </div>
 
                   <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
-                    <input
-                      value={newValueByOptionId[option.id] ?? ""}
-                      onChange={(event) => handleNewValueChange(option.id, event.target.value)}
-                      className="admin-input h-9 text-xs"
-                      placeholder="Nuevo valor para esta opcion"
-                    />
+                    <div className="admin-input-wrap">
+                      <input
+                        value={newValueByOptionId[option.id] ?? ""}
+                        onChange={(event) => handleNewValueChange(option.id, event.target.value)}
+                        maxLength={INPUT_LIMITS.optionValue}
+                        className="admin-input h-9 text-xs"
+                        placeholder="Nuevo valor para esta opcion"
+                      />
+                      <CharCount value={newValueByOptionId[option.id]} max={INPUT_LIMITS.optionValue} />
+                    </div>
                     <button
                       type="button"
                       className="variant-action-btn variant-action-btn--activate"

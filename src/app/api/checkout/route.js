@@ -1,110 +1,187 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-
 import { getCurrentUser } from "@/lib/auth";
+import { validateCheckoutFormData } from "@/lib/checkout-validation";
+import { INPUT_LIMITS } from "@/lib/input-limits";
+import { rateLimit } from "@/lib/rate-limit";
+
+function normalizeCheckoutItems(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return { ok: false, error: "Tu carrito esta vacio o es invalido." };
+  }
+
+  const grouped = new Map();
+
+  for (const rawItem of items) {
+    const variantId = String(rawItem?.variantId ?? "").trim();
+    const quantity = Number.parseInt(String(rawItem?.quantity ?? ""), 10);
+
+    if (
+      !variantId ||
+      !Number.isFinite(quantity) ||
+      quantity <= 0 ||
+      quantity > INPUT_LIMITS.stockMax
+    ) {
+      return { ok: false, error: "Hay productos invalidos en el carrito." };
+    }
+
+    const currentQuantity = grouped.get(variantId) || 0;
+    grouped.set(variantId, currentQuantity + quantity);
+  }
+
+  const normalizedItems = Array.from(grouped.entries()).map(([variantId, quantity]) => ({
+    variantId,
+    quantity,
+  }));
+
+  return { ok: true, items: normalizedItems };
+}
 
 export async function POST(request) {
+  const rl = rateLimit(request, { limit: 10, windowMs: 10 * 60 * 1000, keyPrefix: "checkout" });
+  if (!rl.ok) return NextResponse.json({ error: rl.error }, { status: 429 });
+
   try {
     const user = await getCurrentUser();
     const userId = user?.id;
-    const body = await request.json();
-    const { items, customer, shipping, notes } = body;
+    const body = await request.json().catch(() => ({}));
 
-    // 1. Basic validation
-    if (!items || !items.length || !customer || !customer.email) {
+    const { items, customer, shipping, notes } = body;
+    const shippingLine2 = shipping?.line2 ? String(shipping.line2).trim() : "";
+    const shippingRegion = shipping?.region ? String(shipping.region).trim() : "";
+    const shippingCountry = shipping?.country ? String(shipping.country).trim() : "PY";
+    const sanitizedNotes = notes ? String(notes).trim() : "";
+
+    const itemsValidation = normalizeCheckoutItems(items);
+    if (!itemsValidation.ok) {
+      return NextResponse.json({ error: itemsValidation.error }, { status: 400 });
+    }
+
+    const formValidation = validateCheckoutFormData({
+      fullName: customer?.fullName,
+      email: customer?.email,
+      phone: customer?.phone,
+      line1: shipping?.line1,
+      city: shipping?.city,
+      postalCode: shipping?.postalCode,
+    });
+
+    if (!formValidation.isValid) {
       return NextResponse.json(
-        { error: "Invalid payload: Missing items or customer details" },
+        {
+          error: "Datos de cliente o envio invalidos.",
+          fieldErrors: formValidation.errors,
+        },
+        { status: 400 }
+      );
+    }
+    if (shippingLine2.length > INPUT_LIMITS.checkoutLine2) {
+      return NextResponse.json(
+        { error: `Linea 2 demasiado larga (max ${INPUT_LIMITS.checkoutLine2}).` },
+        { status: 400 }
+      );
+    }
+    if (shippingRegion.length > INPUT_LIMITS.checkoutRegion) {
+      return NextResponse.json(
+        { error: `Region demasiado larga (max ${INPUT_LIMITS.checkoutRegion}).` },
+        { status: 400 }
+      );
+    }
+    if (shippingCountry.length > INPUT_LIMITS.checkoutCountry) {
+      return NextResponse.json(
+        { error: `Codigo de pais invalido (max ${INPUT_LIMITS.checkoutCountry}).` },
+        { status: 400 }
+      );
+    }
+    if (sanitizedNotes.length > INPUT_LIMITS.notes) {
+      return NextResponse.json(
+        { error: `La nota supera el maximo de ${INPUT_LIMITS.notes} caracteres.` },
         { status: 400 }
       );
     }
 
-    // 2. Fetch variants securely from database
-    const variantIds = items.map((item) => item.variantId);
-    
+    const normalizedItems = itemsValidation.items;
+    const variantIds = normalizedItems.map((item) => item.variantId);
+
     const dbVariants = await prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
-      include: { product: true }
+      include: { product: true },
     });
 
     if (dbVariants.length !== variantIds.length) {
       return NextResponse.json(
-        { error: "One or more checkout items are invalid or unavailable." },
+        { error: "Uno o mas productos ya no estan disponibles." },
         { status: 400 }
       );
     }
 
-    // 3. Security calculations and Stock logic
     let subtotalAmount = 0;
     const orderItemsRecord = [];
 
-    for (const item of items) {
-      const dbVariant = dbVariants.find(v => v.id === item.variantId);
-      
-      // Stock evaluation
-      if (dbVariant.stock < item.quantity) {
+    for (const item of normalizedItems) {
+      const dbVariant = dbVariants.find((entry) => entry.id === item.variantId);
+      if (!dbVariant) {
         return NextResponse.json(
-          { error: `Insufficient stock for product: ${dbVariant.product.name}` },
+          { error: "Uno o mas productos ya no estan disponibles." },
           { status: 400 }
         );
       }
 
-      // Security: use DB Price, NEVER the client price
+      if (dbVariant.stock < item.quantity) {
+        return NextResponse.json(
+          { error: `Stock insuficiente para: ${dbVariant.product.name}` },
+          { status: 400 }
+        );
+      }
+
       const unitPrice = Number(dbVariant.price);
       const lineTotal = unitPrice * item.quantity;
-      
+
       subtotalAmount += lineTotal;
 
       orderItemsRecord.push({
         productId: dbVariant.productId,
         variantId: dbVariant.id,
         quantity: item.quantity,
-        unitPrice: unitPrice,
-        lineTotal: lineTotal,
+        unitPrice,
+        lineTotal,
       });
     }
 
-    const shippingAmount = 0; // Configurable flat-rate or dynamic
+    const shippingAmount = 0;
     const totalAmount = subtotalAmount + shippingAmount;
 
-    // 4. Create Transaction
     const order = await prisma.$transaction(async (tx) => {
-      
-      // Calculate order
       const createdOrder = await tx.order.create({
         data: {
-          customerName: customer.fullName,
-          customerEmail: customer.email,
-          customerPhone: customer.phone || null,
-          shippingLine1: shipping.line1,
-          shippingLine2: shipping.line2 || null,
-          shippingCity: shipping.city,
-          shippingRegion: shipping.region || null,
-          shippingPostal: shipping.postalCode || null,
-          subtotalAmount: subtotalAmount,
-          shippingAmount: shippingAmount,
-          totalAmount: totalAmount,
-          shippingCountry: shipping.country || "PY",
-          notes: notes || null,
+          customerName: formValidation.normalized.fullName,
+          customerEmail: formValidation.normalized.email,
+          customerPhone: formValidation.normalized.phone || null,
+          shippingLine1: formValidation.normalized.line1,
+          shippingLine2: shippingLine2 || null,
+          shippingCity: formValidation.normalized.city,
+          shippingRegion: shippingRegion || null,
+          shippingPostal: formValidation.normalized.postalCode || null,
+          subtotalAmount,
+          shippingAmount,
+          totalAmount,
+          shippingCountry: shippingCountry || "PY",
+          notes: sanitizedNotes || null,
           user: userId ? { connect: { id: userId } } : undefined,
           items: {
-            create: orderItemsRecord
-          }
-        }
+            create: orderItemsRecord,
+          },
+        },
       });
 
-      // Clear DB cart if user is authenticated
       if (userId) {
-        await tx.userCartItem.deleteMany({
-          where: { userId }
-        });
+        await tx.userCartItem.deleteMany({ where: { userId } });
       }
 
-      // Update stock
-      for (const item of items) {
+      for (const item of normalizedItems) {
         await tx.productVariant.update({
           where: { id: item.variantId },
-          data: { stock: { decrement: item.quantity } }
+          data: { stock: { decrement: item.quantity } },
         });
       }
 
@@ -112,11 +189,10 @@ export async function POST(request) {
     });
 
     return NextResponse.json({ success: true, orderCode: order.orderCode }, { status: 201 });
-
   } catch (error) {
     console.error("Checkout API Error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error during checkout." },
+      { error: "Error interno al procesar el checkout." },
       { status: 500 }
     );
   }

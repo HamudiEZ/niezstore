@@ -285,23 +285,23 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
 
   return (
     <PageShell gap="lg">
-      <nav className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-        <Link href="/" className="hover:text-cyan-300">
+      <nav className="flex items-center gap-2 text-xs text-slate-500 min-w-0 overflow-hidden">
+        <Link href="/" className="shrink-0 hover:text-cyan-300">
           Inicio
         </Link>
-        <span>/</span>
+        <span className="shrink-0">/</span>
         {categorySlug ? (
           <Link
             href={`/categoria/${categorySlug}`}
-            className="hover:text-cyan-300"
+            className="shrink-0 hover:text-cyan-300"
           >
             {categoryName}
           </Link>
         ) : (
-          <span>{categoryName}</span>
+          <span className="shrink-0">{categoryName}</span>
         )}
-        <span>/</span>
-        <span className="text-slate-300">{product.name}</span>
+        <span className="shrink-0">/</span>
+        <span className="truncate text-slate-300">{product.name}</span>
       </nav>
 
       <section className="grid gap-12 lg:grid-cols-[1.3fr_1fr] items-start">
@@ -402,18 +402,21 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
             </div>
         </div>
 
-        <div className="flex flex-col py-2 lg:py-6 lg:pl-4">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-            <span className="rounded-full border border-slate-700 bg-slate-900/70 px-2.5 py-1">
+        <div className="flex min-w-0 flex-col overflow-hidden py-2 lg:py-6 lg:pl-4">
+          <div className="flex items-center gap-2 text-xs text-slate-400 min-w-0">
+            <span className="truncate max-w-[200px] rounded-full border border-slate-700 bg-slate-900/70 px-2.5 py-1">
               {product.brand || "Niez Store"}
             </span>
-            <span className="rounded-full border border-slate-700 bg-slate-900/70 px-2.5 py-1">
+            <span className="truncate max-w-[200px] rounded-full border border-slate-700 bg-slate-900/70 px-2.5 py-1">
               {categoryName}
             </span>
           </div>
 
           <div className="flex items-start justify-between gap-4 mt-4">
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-100 md:text-3xl lg:text-4xl">
+            <h1
+              className="text-2xl font-extrabold tracking-tight text-slate-100 md:text-3xl lg:text-4xl line-clamp-3"
+              style={{ overflowWrap: "anywhere" }}
+            >
               {product.name}
             </h1>
             <button
@@ -522,7 +525,10 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
           ) : null}
 
           <div className="mt-8 space-y-4">
-            <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            <p
+              className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-6"
+              style={{ overflowWrap: "anywhere" }}
+            >
               {product.description}
             </p>
             <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
@@ -647,31 +653,31 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
           <h2 className="section-title text-slate-100">Ficha rapida</h2>
           <dl className="mt-3 space-y-2 text-sm">
             {product.brand && (
-              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2">
-                <dt className="text-slate-400">Marca</dt>
-                <dd className="font-semibold text-slate-100">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 min-w-0">
+                <dt className="shrink-0 text-slate-400">Marca</dt>
+                <dd className="truncate font-semibold text-slate-100">
                   {product.brand}
                 </dd>
               </div>
             )}
             {categoryName && (
-              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2">
-                <dt className="text-slate-400">Categoria</dt>
-                <dd className="font-semibold text-slate-100">{categoryName}</dd>
+              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 min-w-0">
+                <dt className="shrink-0 text-slate-400">Categoria</dt>
+                <dd className="truncate font-semibold text-slate-100">{categoryName}</dd>
               </div>
             )}
             {selectedVariantSummary && (
-              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2">
-                <dt className="text-slate-400">Variante activa</dt>
-                <dd className="font-semibold text-slate-100">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 min-w-0">
+                <dt className="shrink-0 text-slate-400">Variante activa</dt>
+                <dd className="truncate font-semibold text-slate-100">
                   {selectedVariantSummary}
                 </dd>
               </div>
             )}
             {selectedVariant?.sku && (
-              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2">
-                <dt className="text-slate-400">SKU</dt>
-                <dd className="font-semibold text-slate-100">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 min-w-0">
+                <dt className="shrink-0 text-slate-400">SKU</dt>
+                <dd className="truncate font-semibold text-slate-100">
                   {selectedVariant.sku}
                 </dd>
               </div>

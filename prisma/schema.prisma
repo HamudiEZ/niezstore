@@ -29,6 +29,7 @@ enum PaymentStatus {
 
 enum PaymentProvider {
   BANCARD
+  TRANSFER
 }
 
 model User {
@@ -240,6 +241,7 @@ model Payment {
   currency        String        @default("PYG")
   externalId      String?
   externalTrace   String?
+  receiptUrl      String?
   responsePayload Json?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

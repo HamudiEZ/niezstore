@@ -170,11 +170,32 @@ export default function Navbar() {
                       Mi cuenta
                     </Link>
                     <Link
-                      href="/cuenta"
+                      href="/cuenta?tab=orders"
                       className="block rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 nav-hover"
                       onClick={() => setAccountOpen(false)}
                     >
                       Mis pedidos
+                    </Link>
+                    <Link
+                      href="/cuenta?tab=addresses"
+                      className="block rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 nav-hover"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Mis direcciones
+                    </Link>
+                    <Link
+                      href="/favoritos"
+                      className="block rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 nav-hover"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Mis favoritos
+                    </Link>
+                    <Link
+                      href="/cuenta?tab=security"
+                      className="block rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 nav-hover"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Seguridad
                     </Link>
                     {user.role === "ADMIN" && (
                       <Link
@@ -239,6 +260,13 @@ export default function Navbar() {
                   onClick={() => setOpen(false)}
                 >
                   Mi cuenta
+                </Link>
+                <Link
+                  href="/cuenta?tab=orders"
+                  className="rounded-lg px-3 py-2 hover:bg-slate-800 nav-hover"
+                  onClick={() => setOpen(false)}
+                >
+                  Mis pedidos
                 </Link>
                 <button
                   type="button"

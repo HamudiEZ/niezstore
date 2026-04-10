@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { slugify } from "@/lib/slug";
+import { INPUT_LIMITS, normalizeSearchTerm } from "@/lib/input-limits";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 8;
@@ -37,7 +38,7 @@ export async function GET(request) {
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const search = String(searchParams.get("search") ?? "").trim();
+  const search = normalizeSearchTerm(searchParams.get("search"));
   const categoryId = String(searchParams.get("categoryId") ?? "").trim();
   const status = normalizeStatusFilter(searchParams.get("status"));
   const pageSize = Math.min(
@@ -134,6 +135,30 @@ export async function POST(request) {
   if (!name || !description || !categoryId) {
     return NextResponse.json(
       { error: "Nombre, descripcion y categoria son obligatorios." },
+      { status: 400 }
+    );
+  }
+  if (name.length > INPUT_LIMITS.productName) {
+    return NextResponse.json(
+      { error: `Nombre demasiado largo (max ${INPUT_LIMITS.productName}).` },
+      { status: 400 }
+    );
+  }
+  if (description.length > INPUT_LIMITS.productDescription) {
+    return NextResponse.json(
+      { error: `Descripcion demasiado larga (max ${INPUT_LIMITS.productDescription}).` },
+      { status: 400 }
+    );
+  }
+  if (brand && brand.length > INPUT_LIMITS.productBrand) {
+    return NextResponse.json(
+      { error: `Marca demasiado larga (max ${INPUT_LIMITS.productBrand}).` },
+      { status: 400 }
+    );
+  }
+  if (rawSlug.length > INPUT_LIMITS.slug) {
+    return NextResponse.json(
+      { error: `Slug demasiado largo (max ${INPUT_LIMITS.slug}).` },
       { status: 400 }
     );
   }

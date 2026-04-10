@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { Button } from "../ui/button";
+import { INPUT_LIMITS } from "@/lib/input-limits";
+import CharCount from "./CharCount";
 
 export default function ProductVariants({
   selectedProduct,
@@ -162,6 +164,7 @@ export default function ProductVariants({
             onChange={onChange}
             type="number"
             min="1"
+            max={INPUT_LIMITS.priceMax}
             className="admin-input"
             placeholder="Precio"
           />
@@ -171,6 +174,7 @@ export default function ProductVariants({
             onChange={onChange}
             type="number"
             min="1"
+            max={INPUT_LIMITS.priceMax}
             className="admin-input"
             placeholder="Precio antes de descuento (opcional)"
           />
@@ -182,16 +186,21 @@ export default function ProductVariants({
             onChange={onChange}
             type="number"
             min="0"
+            max={INPUT_LIMITS.stockMax}
             className="admin-input"
             placeholder="Stock disponible"
           />
-          <input
-            name="sku"
-            value={form.sku}
-            onChange={onChange}
-            className="admin-input"
-            placeholder="SKU (opcional, codigo interno)"
-          />
+          <div className="admin-input-wrap">
+            <input
+              name="sku"
+              value={form.sku}
+              onChange={onChange}
+              maxLength={INPUT_LIMITS.sku}
+              className="admin-input"
+              placeholder="SKU (opcional, codigo interno)"
+            />
+            <CharCount value={form.sku} max={INPUT_LIMITS.sku} />
+          </div>
         </div>
         {renderImagePicker(form.imageUrl)}
         <p className="text-[11px] admin-muted">
@@ -310,6 +319,7 @@ export default function ProductVariants({
                           onChange={onEditChange}
                           type="number"
                           min="1"
+                          max={INPUT_LIMITS.priceMax}
                           className="admin-input h-9 text-xs"
                           placeholder="Precio"
                         />
@@ -319,6 +329,7 @@ export default function ProductVariants({
                           onChange={onEditChange}
                           type="number"
                           min="1"
+                          max={INPUT_LIMITS.priceMax}
                           className="admin-input h-9 text-xs"
                           placeholder="Precio comparativo"
                         />
@@ -330,16 +341,21 @@ export default function ProductVariants({
                           onChange={onEditChange}
                           type="number"
                           min="0"
+                          max={INPUT_LIMITS.stockMax}
                           className="admin-input h-9 text-xs"
                           placeholder="Stock"
                         />
-                        <input
-                          name="sku"
-                          value={editForm.sku}
-                          onChange={onEditChange}
-                          className="admin-input h-9 text-xs"
-                          placeholder="SKU"
-                        />
+                        <div className="admin-input-wrap">
+                          <input
+                            name="sku"
+                            value={editForm.sku}
+                            onChange={onEditChange}
+                            maxLength={INPUT_LIMITS.sku}
+                            className="admin-input h-9 text-xs"
+                            placeholder="SKU"
+                          />
+                          <CharCount value={editForm.sku} max={INPUT_LIMITS.sku} />
+                        </div>
                       </div>
                       {renderImagePicker(editForm.imageUrl, true)}
                       <label className="flex items-center gap-2 text-xs admin-subtitle">

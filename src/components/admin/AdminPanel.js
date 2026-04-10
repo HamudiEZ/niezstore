@@ -10,6 +10,8 @@ import ProductOptions from "./ProductOptions";
 import ProductVariants from "./ProductVariants";
 import ProductEditForm from "./ProductEditForm";
 import OrdersManager from "./OrdersManager";
+import DashboardTab from "./DashboardTab";
+import { normalizeSearchTerm } from "@/lib/input-limits";
 
 const EMPTY_CATEGORY_FORM = {
   name: "",
@@ -77,6 +79,11 @@ const EMPTY_PAGINATION = {
 };
 
 const ADMIN_SECTIONS = [
+  {
+    id: "dashboard",
+    title: "Resumen",
+    description: "Métricas y KPIs en tiempo real del negocio.",
+  },
   {
     id: "categories",
     title: "Categorias",
@@ -175,7 +182,8 @@ export default function AdminPanel() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
   const [pendingImages, setPendingImages] = useState([]);
-  const [activeSection, setActiveSection] = useState("products");
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [orderSearchContext, setOrderSearchContext] = useState("");
   const [categoriesPage, setCategoriesPage] = useState(1);
   const [productsPage, setProductsPage] = useState(1);
 
@@ -464,7 +472,7 @@ export default function AdminPanel() {
   };
 
   const handleProductSearchChange = (value) => {
-    setSearchTerm(value);
+    setSearchTerm(normalizeSearchTerm(value));
     setProductsPage(1);
   };
 
@@ -479,7 +487,7 @@ export default function AdminPanel() {
   };
 
   const handleCategorySearchChange = (value) => {
-    setCategorySearchTerm(value);
+    setCategorySearchTerm(normalizeSearchTerm(value));
     setCategoriesPage(1);
   };
 
@@ -1125,6 +1133,25 @@ export default function AdminPanel() {
       activeTab={activeSection}
       onTabChange={setActiveSection}
     >
+      {activeSection === "dashboard" && (
+        <DashboardTab 
+          onNavigateToOrders={(code) => {
+            if (typeof code === 'string' && code !== 'orders') {
+              setOrderSearchContext(code);
+            } else {
+              setOrderSearchContext("");
+            }
+            setActiveSection("orders");
+          }} 
+          onNavigateToProduct={(productId) => {
+             // Pass only the string ID to handleSelectProduct
+             if (productId && typeof handleSelectProduct === 'function') {
+                handleSelectProduct(productId);
+             }
+          }}
+        />
+      )}
+      
       {activeSection === "categories" && (
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <CategoryForm
@@ -1176,7 +1203,12 @@ export default function AdminPanel() {
         </section>
       )}
 
-      {activeSection === "orders" && <OrdersManager />}
+      {activeSection === "orders" && (
+        <OrdersManager 
+          initialSearch={orderSearchContext} 
+          onClearInitialSearch={() => setOrderSearchContext("")} 
+        />
+      )}
 
       {activeSection === "products" && (
         <>
@@ -1230,12 +1262,12 @@ export default function AdminPanel() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
-                <div className="admin-list-item p-3">
-                  <p className="text-sm font-semibold admin-title">
+              <div className="space-y-5 min-w-0 flex-1 w-full max-w-full overflow-hidden">
+                <div className="admin-list-item p-3 min-w-0 text-left">
+                  <p className="text-sm font-semibold admin-title truncate max-w-full" title={selectedProduct.name}>
                     {selectedProduct.name}
                   </p>
-                  <p className="text-xs admin-muted">
+                  <p className="text-xs admin-muted truncate max-w-full" title={selectedProduct.brand}>
                     {selectedProduct.brand || "Sin marca"} -{" "}
                     {selectedProduct.category?.name || "Sin categoria"}
                   </p>

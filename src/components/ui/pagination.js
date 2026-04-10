@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo } from "react";
 
@@ -68,9 +68,7 @@ export default function Pagination({
     [safePage, safeTotalPages, windowSize]
   );
 
-  if (safeTotalPages <= 1) {
-    return null;
-  }
+  /* Allow rendering the summary even on single pages */
 
   const changePage = (nextPage) => {
     if (!onPageChange) return;
