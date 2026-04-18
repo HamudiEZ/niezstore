@@ -1,29 +1,64 @@
-﻿import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import PageHeader from "@/components/ui/page-header";
+import PageShell from "@/components/ui/page-shell";
+import AccountClient from "@/components/account/AccountClient";
 
-export default function AccountPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export const metadata = {
+  title: "Mi Cuenta | Niez Store",
+};
+
+export default async function AccountPage() {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login?next=/cuenta");
+  }
+
+  // Fetch orders from DB securely on the server
+  const dbOrders = await prisma.order.findMany({
+    where: { userId: user.id },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Serialize orders to plain objects (Next.js Client Components don't support Prisma Decimal objects)
+  const orders = dbOrders.map(order => ({
+    ...order,
+    subtotalAmount: Number(order.subtotalAmount),
+    shippingAmount: Number(order.shippingAmount),
+    totalAmount: Number(order.totalAmount),
+    discountAmount: Number(order.discountAmount),
+    taxAmount: Number(order.taxAmount),
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+    items: order.items.map(item => ({
+      ...item,
+      unitPrice: Number(item.unitPrice),
+      lineTotal: Number(item.lineTotal),
+      discountTotal: Number(item.discountTotal),
+      createdAt: item.createdAt.toISOString(),
+    }))
+  }));
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">Mi cuenta</h1>
-
-      <div className="grid gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="soft-card p-4">
-          <ul className="space-y-2 text-sm">
-            <li className="rounded-lg bg-cyan-400 px-3 py-2 font-semibold text-slate-950">Perfil</li>
-            <li className="rounded-lg px-3 py-2 text-slate-300">Pedidos</li>
-            <li className="rounded-lg px-3 py-2 text-slate-300">Direcciones</li>
-            <li className="rounded-lg px-3 py-2 text-slate-300">Seguridad</li>
-          </ul>
-        </aside>
-
-        <section className="soft-card p-4 md:p-5">
-          <h2 className="text-lg font-bold text-slate-100">Informacion personal</h2>
-          <p className="mt-2 text-sm text-slate-400">Esta vista es UI de demostracion. Aqui veras datos reales cuando conectemos backend.</p>
-
-          <div className="mt-5 rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-4 text-sm text-slate-400">
-            Aun no tienes pedidos registrados. <Link href="/" className="font-semibold text-cyan-300 hover:underline">Explorar productos</Link>
-          </div>
-        </section>
-      </div>
-    </div>
+    <PageShell>
+      <PageHeader 
+        title="Mi cuenta" 
+        description="Gestioná perfil, pedidos, direcciones y seguridad de tu cuenta Niez." 
+      />
+      
+      {/* Client layout for tab management */}
+      <AccountClient user={user} orders={orders} />
+    </PageShell>
   );
 }

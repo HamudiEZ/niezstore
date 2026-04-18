@@ -1,20 +1,36 @@
-﻿import Link from "next/link";
-import { categories } from "../../lib/dummy-data";
+import Link from "next/link";
+import { getPublicCategories } from "../../lib/catalog";
+import PageShell from "../../components/ui/page-shell";
+import PageHeader from "../../components/ui/page-header";
 
-export default function CategoriesPage() {
+export const metadata = {
+  title: "Categorías | Niez Store",
+  description: "Explora todo el catálogo de Niez Store por categoría.",
+};
+
+export default async function CategoriesPage() {
+  const categories = await getPublicCategories();
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">Todas las categorias</h1>
-      <section className="soft-card p-4 md:p-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => (
-            <Link key={category.id} href={`/categoria/${category.id}`} className="rounded-xl border border-slate-700 bg-slate-900/60 p-4 transition hover:border-cyan-400/70 hover:bg-slate-900">
-              <p className="font-semibold text-slate-100">{category.name}</p>
-              <p className="mt-1 text-sm text-slate-400">{category.description}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-    </div>
+    <PageShell>
+      <PageHeader
+        title="Todas las categorías"
+        description="Explora cada sección del catálogo y entra al listado de productos."
+      />
+      <div className="mt-8 grid shop-card-grid sm:grid-cols-2 lg:grid-cols-4">
+        {categories.map((category) => (
+          <Link
+            key={category.id}
+            href={`/categoria/${category.slug}`}
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition hover:border-cyan-400/70 hover:bg-[var(--surface-soft)] hover:-translate-y-0.5 hover:shadow-lg"
+          >
+            <p className="font-semibold text-[var(--foreground)]">{category.name}</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              {category.description}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </PageShell>
   );
 }

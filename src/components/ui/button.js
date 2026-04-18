@@ -5,9 +5,9 @@ export function Button({ className, variant = "default", size = "md", ...props }
     "inline-flex items-center justify-center rounded-xl font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 disabled:pointer-events-none disabled:opacity-60";
 
   const variants = {
-    default: "bg-cyan-400 text-slate-950 hover:bg-cyan-300",
-    outline: "border border-slate-600 bg-slate-900 text-slate-100 hover:bg-slate-800",
-    ghost: "text-slate-200 hover:bg-slate-800",
+    default: "btn-ui btn-ui--primary",
+    outline: "btn-ui btn-ui--outline",
+    ghost: "btn-ui btn-ui--ghost",
   };
 
   const sizes = {
