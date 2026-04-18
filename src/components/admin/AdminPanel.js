@@ -979,12 +979,12 @@ export default function AdminPanel() {
       setVariantMessage("Precio invalido.");
       return;
     }
-    if (compareAtPrice != null && (!Number.isFinite(compareAtPrice) || compareAtPrice <= 0)) {
+    // Validation: If compareAtPrice is less than or equal to price, we treat it as no discount (null)
+    const finalCompareAtPrice = 
+      (compareAtPrice != null && compareAtPrice > price) ? compareAtPrice : null;
+
+    if (compareAtPrice != null && !Number.isFinite(compareAtPrice)) {
       setVariantMessage("Precio comparativo invalido.");
-      return;
-    }
-    if (compareAtPrice != null && compareAtPrice <= price) {
-      setVariantMessage("El precio de descuento debe ser mayor al precio actual.");
       return;
     }
     if (!Number.isFinite(stock) || stock < 0) {
@@ -1013,7 +1013,7 @@ export default function AdminPanel() {
       const payload = {
         sku: variantForm.sku.trim(),
         price,
-        compareAtPrice,
+        compareAtPrice: finalCompareAtPrice,
         stock,
         imageUrl: variantForm.imageUrl.trim(),
         isActive: variantForm.isActive,
@@ -1087,15 +1087,12 @@ export default function AdminPanel() {
       setVariantEditMessage("Precio invalido.");
       return;
     }
-    if (
-      compareAtPrice != null &&
-      (!Number.isFinite(compareAtPrice) || compareAtPrice <= 0)
-    ) {
+    // Validation: If compareAtPrice is less than or equal to price, treat as no discount
+    const finalCompareAtPrice = 
+      (compareAtPrice != null && compareAtPrice > price) ? compareAtPrice : null;
+
+    if (compareAtPrice != null && !Number.isFinite(compareAtPrice)) {
       setVariantEditMessage("Precio comparativo invalido.");
-      return;
-    }
-    if (compareAtPrice != null && compareAtPrice <= price) {
-      setVariantEditMessage("El precio de descuento debe ser mayor al precio actual.");
       return;
     }
     if (!Number.isFinite(stock) || stock < 0) {
@@ -1109,7 +1106,7 @@ export default function AdminPanel() {
       const payload = {
         sku: variantEditForm.sku.trim(),
         price,
-        compareAtPrice,
+        compareAtPrice: finalCompareAtPrice,
         stock,
         imageUrl: variantEditForm.imageUrl.trim(),
         isActive: variantEditForm.isActive,
