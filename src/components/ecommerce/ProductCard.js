@@ -54,7 +54,7 @@ export default function ProductCard({ product, variant = "grid" }) {
         "group flex max-w-full rounded-xl border border-slate-700 bg-slate-900/80 transition hover:-translate-y-0.5 hover:border-cyan-400/70 hover:shadow-2xl",
         isRail && "flex-col h-full min-h-[19.5rem] w-[11.25rem] shrink-0 overflow-hidden p-0 sm:min-h-[20.5rem] sm:w-[12.5rem]",
         !isRail && !isList && "flex-col min-w-0 p-3",
-        isList && "flex-row h-32 sm:h-40 min-w-0 overflow-hidden"
+        isList && "flex-row h-auto min-h-[10rem] sm:h-40 min-w-0 overflow-hidden"
       )}
     >
       <div
@@ -62,7 +62,7 @@ export default function ProductCard({ product, variant = "grid" }) {
           "shrink-0",
           !isRail && !isList && "w-full flex justify-center",
           isRail && "w-full",
-          isList && "w-32 sm:w-40 border-r border-slate-800"
+          isList && "w-28 sm:w-40 border-r border-slate-800"
         )}
       >
         <div
@@ -112,7 +112,7 @@ export default function ProductCard({ product, variant = "grid" }) {
       <div
         className={clsx(
           "min-w-0 flex flex-1 flex-col",
-          isRail ? "px-3 pb-3 pt-3" : isList ? "p-4 justify-center" : "mt-3",
+          isRail ? "px-3 pb-3 pt-3" : isList ? "p-3 sm:p-4 justify-center" : "mt-3",
         )}
       >
         <p
