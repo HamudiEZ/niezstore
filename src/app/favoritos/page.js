@@ -15,7 +15,7 @@ function FavoritesContent() {
   const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1", 10);
-  const pageSize = 20;
+  const pageSize = 6;
 
   useEffect(() => {
     setMounted(true);
@@ -79,9 +79,9 @@ function FavoritesContent() {
 
       <div className="mt-8">
         <div className="flex flex-col gap-8">
-          <div className="grid shop-card-grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="flex flex-col gap-4 w-full">
             {favorites.slice((page - 1) * pageSize, page * pageSize).map((product) => (
-              <ProductCard key={product.id} product={product} variant="rail" />
+              <ProductCard key={product.id} product={product} variant="list" />
             ))}
           </div>
 

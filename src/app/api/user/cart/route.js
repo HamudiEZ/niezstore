@@ -80,28 +80,46 @@ export async function POST(request) {
     // Highest Quantity Override Merge
     if (action === "merge" && Array.isArray(items)) {
       if (items.length > 0) {
+        const variantIds = items.map(item => item.variant.id);
+
+        const existingItems = await prisma.userCartItem.findMany({
+          where: { userId, variantId: { in: variantIds } }
+        });
+        const existingMap = new Map(existingItems.map(item => [item.variantId, item]));
+
+        const operations = [];
+
         for (const localItem of items) {
-          const existing = await prisma.userCartItem.findUnique({
-            where: { userId_variantId: { userId, variantId: localItem.variant.id } }
-          });
+          const variantId = localItem.variant.id;
+          const productId = localItem.product.id;
+          const quantity = localItem.quantity;
+          const existing = existingMap.get(variantId);
 
           if (existing) {
-            if (localItem.quantity > existing.quantity) {
-              await prisma.userCartItem.update({
-                where: { id: existing.id },
-                data: { quantity: localItem.quantity }
-              });
+            if (quantity > existing.quantity) {
+              operations.push(
+                prisma.userCartItem.update({
+                  where: { id: existing.id },
+                  data: { quantity }
+                })
+              );
             }
           } else {
-            await prisma.userCartItem.create({
-              data: {
-                userId,
-                productId: localItem.product.id,
-                variantId: localItem.variant.id,
-                quantity: localItem.quantity
-              }
-            });
+            operations.push(
+              prisma.userCartItem.create({
+                data: {
+                  userId,
+                  productId,
+                  variantId,
+                  quantity
+                }
+              })
+            );
           }
+        }
+
+        if (operations.length > 0) {
+          await prisma.$transaction(operations);
         }
       }
       return NextResponse.json({ success: true });

@@ -18,6 +18,7 @@ import {
   Receipt,
   RotateCcw,
   Search,
+  ShieldCheck,
   Truck,
   User,
   Download
@@ -519,20 +520,20 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
             return (
               <article
                 key={order.id}
-                className="group rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-soft)] p-4 transition-all duration-200 hover:border-[var(--admin-border-strong)] hover:bg-[var(--admin-surface-muted)]"
+                className="group rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-soft)] p-3 sm:p-4 transition-all duration-200 hover:border-[var(--admin-border-strong)] hover:bg-[var(--admin-surface-muted)] overflow-hidden w-full max-w-full"
               >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-accent)]">
+                <div className="flex flex-col md:flex-row items-start md:justify-between gap-4 w-full">
+                  <div className="flex items-start gap-3 w-full min-w-0">
+                    <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-accent)]">
                       <Receipt className="h-5 w-5" />
                     </span>
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-black tracking-wide text-[var(--admin-text)]">
+                        <p className="text-sm font-black tracking-wide text-[var(--admin-text)] truncate">
                           ORDEN #{order.orderCode}
                         </p>
                         <span
-                          className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] ${getStatusClass(order.status)}`}
+                          className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] flex-shrink-0 ${getStatusClass(order.status)}`}
                         >
                           {getStatusLabel(order.status)}
                         </span>
@@ -543,13 +544,15 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--admin-text-soft)]">
-                      Total de la venta
-                    </p>
-                    <p className="text-2xl font-black tracking-tight text-[var(--admin-text)]">
-                      ${formatPrice(order.totalAmount)}
-                    </p>
+                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t border-[var(--admin-border)] md:border-transparent">
+                    <div className="text-left md:text-right">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--admin-text-soft)]">
+                        Total
+                      </p>
+                      <p className="text-lg md:text-2xl font-black tracking-tight text-[var(--admin-text)]">
+                        ${formatPrice(order.totalAmount)}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={() =>
@@ -557,7 +560,7 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                           current === order.id ? "" : order.id
                         )
                       }
-                      className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--admin-text-muted)] transition-colors hover:border-[var(--admin-border-strong)] hover:text-[var(--admin-text)]"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 md:px-2.5 py-1.5 md:py-1 text-xs md:text-[11px] font-semibold text-[var(--admin-text-muted)] transition-colors hover:border-[var(--admin-border-strong)] hover:text-[var(--admin-text)]"
                       aria-expanded={isExpanded}
                     >
                       {isExpanded ? (
@@ -576,15 +579,17 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                 </div>
 
                 <div className="mt-4 grid gap-2 border-t border-[var(--admin-border)] pt-4 text-xs text-[var(--admin-text-muted)] md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center">
-                  <p className="inline-flex items-center gap-2">
-                    <User className="h-3.5 w-3.5" />
-                    <span className="font-semibold text-[var(--admin-text)]">
-                      {order.customerName || "Cliente"}
-                    </span>
-                    <span className="text-[var(--admin-text-soft)]">
-                      {order.customerEmail || "Sin correo"}
-                    </span>
-                  </p>
+                  <div className="flex flex-col gap-1 w-full overflow-hidden">
+                    <p className="flex items-center gap-2 overflow-hidden w-full">
+                      <User className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="font-semibold text-[var(--admin-text)] truncate">
+                        {order.customerName || "Cliente"}
+                      </span>
+                      <span className="text-[var(--admin-text-soft)] truncate">
+                        {order.customerEmail || "Sin correo"}
+                      </span>
+                    </p>
+                  </div>
                   <p className="font-semibold text-[var(--admin-text-muted)]">
                     {orderItems.length} {orderItems.length === 1 ? "item" : "items"}
                   </p>
@@ -597,11 +602,11 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                   {visibleItems.map((item, index) => (
                     <span
                       key={`${item.id || item.productId || "item"}-${index}`}
-                      className="inline-flex items-center rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--admin-text-muted)] max-w-[280px]"
+                      className="inline-flex items-center rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--admin-text-muted)] max-w-full overflow-hidden"
                       title={item.product?.name}
                     >
                       <span className="flex-shrink-0 mr-1">{item.quantity}x</span>
-                      <span className="truncate min-w-0">{item.product?.name || "Producto"}</span>
+                      <span className="truncate">{item.product?.name || "Producto"}</span>
                     </span>
                   ))}
                   {hiddenItems > 0 && (
@@ -663,8 +668,8 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                 </div>
 
                 {isExpanded && (
-                  <div className="mt-4 grid gap-3 border-t border-[var(--admin-border)] pt-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-                    <section className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3">
+                  <div className="mt-4 grid gap-3 border-t border-[var(--admin-border)] pt-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] overflow-hidden w-full min-w-0">
+                    <section className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3 overflow-hidden w-full min-w-0">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-text-soft)]">
                         Productos del pedido
                       </p>
@@ -672,9 +677,9 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                         {orderItems.map((item, index) => (
                           <div
                             key={`${item.id || item.productId || "detail"}-${index}`}
-                            className="grid gap-1 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-soft)] p-2 text-xs sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center"
+                            className="grid gap-1 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-soft)] p-2 text-xs sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center overflow-hidden w-full min-w-0"
                           >
-                            <p className="font-semibold text-[var(--admin-text)] truncate pr-2" title={item.product?.name}>
+                            <p className="font-semibold text-[var(--admin-text)] overflow-hidden text-ellipsis whitespace-nowrap pr-2" title={item.product?.name}>
                               {item.product?.name || "Producto"}
                             </p>
                             <p className="text-[var(--admin-text-muted)]">
@@ -691,53 +696,55 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                       </div>
                     </section>
 
-                    <section className="space-y-3">
-                      <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3">
+                    <section className="space-y-3 overflow-hidden w-full min-w-0">
+                      <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3 overflow-hidden w-full min-w-0">
                         <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-text-soft)]">
                           <Truck className="h-3.5 w-3.5" />
                           Envio
                         </p>
                         <div className="mt-2 space-y-1 text-xs text-[var(--admin-text-muted)]">
-                          <p className="font-semibold text-[var(--admin-text)] line-clamp-2" style={{ overflowWrap: "anywhere" }} title={order.shippingLine1}>
+                          <p className="font-semibold text-[var(--admin-text)] break-all line-clamp-2" title={order.shippingLine1}>
                             {order.shippingLine1 || "Sin direccion"}
                           </p>
-                          {order.shippingLine2 ? <p className="line-clamp-2" style={{ overflowWrap: "anywhere" }} title={order.shippingLine2}>{order.shippingLine2}</p> : null}
-                          <p className="inline-flex items-center gap-1.5">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {[
-                              order.shippingCity,
-                              order.shippingRegion,
-                              order.shippingPostal,
-                              order.shippingCountry,
-                            ]
-                              .filter(Boolean)
-                              .join(", ") || "Sin datos de ubicacion"}
+                          {order.shippingLine2 ? <p className="break-all line-clamp-2" title={order.shippingLine2}>{order.shippingLine2}</p> : null}
+                          <p className="flex items-start gap-1.5 w-full overflow-hidden">
+                            <MapPin className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                            <span className="break-all">
+                              {[
+                                order.shippingCity,
+                                order.shippingRegion,
+                                order.shippingPostal,
+                                order.shippingCountry,
+                              ]
+                                .filter(Boolean)
+                                .join(", ") || "Sin datos de ubicacion"}
+                            </span>
                           </p>
                         </div>
                       </div>
 
-                      <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3">
+                      <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3 overflow-hidden w-full min-w-0">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-text-soft)]">
                           Contacto
                         </p>
-                        <div className="mt-2 space-y-1 text-xs text-[var(--admin-text-muted)]">
-                          <p className="inline-flex items-center gap-1.5">
-                            <User className="h-3.5 w-3.5" />
-                            {order.customerName || "Sin nombre"}
+                        <div className="mt-2 space-y-1 text-xs text-[var(--admin-text-muted)] w-full overflow-hidden">
+                          <p className="flex items-center gap-1.5 w-full overflow-hidden">
+                            <User className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{order.customerName || "Sin nombre"}</span>
                           </p>
-                          <p className="inline-flex items-center gap-1.5">
-                            <Mail className="h-3.5 w-3.5" />
-                            {order.customerEmail || "Sin correo"}
+                          <p className="flex items-center gap-1.5 w-full overflow-hidden">
+                            <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{order.customerEmail || "Sin correo"}</span>
                           </p>
-                          <p className="inline-flex items-center gap-1.5">
-                            <Phone className="h-3.5 w-3.5" />
-                            {order.customerPhone || "Sin telefono"}
+                          <p className="flex items-center gap-1.5 w-full overflow-hidden">
+                            <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{order.customerPhone || "Sin telefono"}</span>
                           </p>
                         </div>
                       </div>
 
                       {order.notes ? (
-                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3">
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3 overflow-hidden w-full min-w-0">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-text-soft)]">
                             Nota del cliente
                           </p>
@@ -746,6 +753,28 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                           </p>
                         </div>
                       ) : null}
+
+                      {order.auditLogs && order.auditLogs.length > 0 && (
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3 overflow-hidden w-full min-w-0">
+                          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-text-soft)]">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Historial de Auditoria
+                          </p>
+                          <div className="mt-3 space-y-3 relative before:absolute before:inset-y-0 before:left-1.5 before:w-px before:bg-[var(--admin-border)]">
+                            {order.auditLogs.map((log) => (
+                              <div key={log.id} className="relative pl-5 text-xs">
+                                <span className="absolute left-0 top-1.5 h-3 w-3 rounded-full border-2 border-[var(--admin-surface)] bg-[var(--admin-accent)]"></span>
+                                <p className="font-semibold text-[var(--admin-text)]">
+                                  {log.details || log.action}
+                                </p>
+                                <p className="text-[var(--admin-text-muted)] mt-0.5">
+                                  por {log.admin?.fullName || "Administrador"} • {formatDate(log.createdAt)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </section>
                   </div>
                 )}

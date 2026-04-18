@@ -179,10 +179,14 @@ export async function POST(request) {
       }
 
       for (const item of normalizedItems) {
-        await tx.productVariant.update({
-          where: { id: item.variantId },
+        const updateResult = await tx.productVariant.updateMany({
+          where: { id: item.variantId, stock: { gte: item.quantity } },
           data: { stock: { decrement: item.quantity } },
         });
+
+        if (updateResult.count === 0) {
+          throw new Error(`Ocurrió un problema con el stock del producto durante el cobro. Por favor, revisa tu carrito e intenta nuevamente.`);
+        }
       }
 
       return createdOrder;
@@ -191,8 +195,11 @@ export async function POST(request) {
     return NextResponse.json({ success: true, orderCode: order.orderCode }, { status: 201 });
   } catch (error) {
     console.error("Checkout API Error:", error);
+    const errorMessage = error instanceof Error && error.message.includes("stock")
+      ? error.message
+      : "Error interno al procesar el checkout.";
     return NextResponse.json(
-      { error: "Error interno al procesar el checkout." },
+      { error: errorMessage },
       { status: 500 }
     );
   }

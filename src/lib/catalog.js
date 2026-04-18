@@ -58,7 +58,7 @@ export async function getFeaturedProducts(take = 8) {
   return products.map(toProductCard).filter(Boolean);
 }
 
-export async function getOfferProducts(take = 8) {
+export async function getOfferProducts(take = 100) {
   const products = await prisma.product.findMany({
     where: {
       isActive: true,
@@ -70,10 +70,14 @@ export async function getOfferProducts(take = 8) {
       },
     },
     orderBy: { createdAt: "desc" },
-    take,
     include: productCardInclude,
   });
-  return products.map(toProductCard).filter(Boolean);
+  
+  // Filter in memory since Prisma doesn't support field-to-field comparison easily
+  return products
+    .map(toProductCard)
+    .filter(p => p && p.discountPercentage !== null && p.discountPercentage > 0)
+    .slice(0, take);
 }
 
 export async function getCategoryBySlug(slug) {
@@ -155,11 +159,19 @@ export async function getProductsByCategorySlug(slug, options = {}) {
     prisma.product.count({ where }),
   ]);
 
+  const finalProducts = products
+    .map(toProductCard)
+    .filter(p => {
+      if (!p) return false;
+      if (onSale) return p.discountPercentage !== null && p.discountPercentage > 0;
+      return true;
+    });
+
   return {
     category,
-    products: products.map(toProductCard).filter(Boolean),
-    totalItems,
-    totalPages: Math.ceil(totalItems / pageSize),
+    products: finalProducts,
+    totalItems: onSale ? finalProducts.length : totalItems,
+    totalPages: Math.ceil((onSale ? finalProducts.length : totalItems) / pageSize),
     currentPage: page,
   };
 }
@@ -286,10 +298,18 @@ export async function searchProducts(query, options = {}) {
     prisma.product.count({ where }),
   ]);
 
+  const finalProducts = products
+    .map(toProductCard)
+    .filter(p => {
+      if (!p) return false;
+      if (onSale) return p.discountPercentage !== null && p.discountPercentage > 0;
+      return true;
+    });
+
   return {
-    products: products.map(toProductCard).filter(Boolean),
-    totalItems,
-    totalPages: Math.ceil(totalItems / pageSize),
+    products: finalProducts,
+    totalItems: onSale ? finalProducts.length : totalItems,
+    totalPages: Math.ceil((onSale ? finalProducts.length : totalItems) / pageSize),
     currentPage: page,
   };
 }

@@ -3,6 +3,8 @@
 import {
   BadgeCheck,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   RotateCcw,
   ShieldCheck,
@@ -217,6 +219,16 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
       .join(" | ");
   }, [options, selectedValues]);
 
+  const stock = selectedVariant?.stock ?? 0;
+  const isOutOfStock = !selectedVariant || stock <= 0;
+  const maxQuantity = stock > 0 ? stock : 1;
+
+  useEffect(() => {
+    if (quantity > maxQuantity) {
+      setQuantity(Math.max(1, maxQuantity));
+    }
+  }, [maxQuantity, quantity]);
+
   const gallery = useMemo(
     () => buildGallery(product, selectedVariant),
     [product, selectedVariant],
@@ -275,10 +287,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
   const price = selectedVariant?.price ?? null;
   const compareAtPrice = selectedVariant?.compareAtPrice ?? null;
   const discountPercentage = getDiscountPercentage(compareAtPrice, price);
-  const stock = selectedVariant?.stock ?? 0;
-  const isOutOfStock = !selectedVariant || stock <= 0;
   const isLowStock = stock > 0 && stock <= 5;
-  const maxQuantity = stock > 0 ? stock : 1;
   const displayQuantity = Math.max(1, Math.min(quantity, maxQuantity));
   const categoryName = product.category?.name || "Categoria";
   const categorySlug = product.category?.slug;
@@ -314,6 +323,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                     src={activeImageUrl}
                     alt={product.name}
                     fill
+                    priority={true}
                     className="object-cover"
                     sizes="(max-width: 1280px) 100vw, 760px"
                   />
@@ -324,8 +334,34 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                 )}
               </div>
 
+              {gallery.length > 1 && (() => {
+                const activeIndex = gallery.findIndex((img) => img.url === activeImageUrl);
+                const prevIndex = (activeIndex - 1 + gallery.length) % gallery.length;
+                const nextIndex = (activeIndex + 1) % gallery.length;
+                return (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setPreferredImageUrl(gallery[prevIndex].url)}
+                      className="product-carousel__arrow product-carousel__arrow--left"
+                      aria-label="Imagen anterior"
+                    >
+                      <ChevronLeft className="h-4 w-4" aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreferredImageUrl(gallery[nextIndex].url)}
+                      className="product-carousel__arrow product-carousel__arrow--right"
+                      aria-label="Imagen siguiente"
+                    >
+                      <ChevronRight className="h-4 w-4" aria-hidden />
+                    </button>
+                  </>
+                );
+              })()}
+
               {discountPercentage ? (
-                <span className="absolute left-3 top-3 rounded-full bg-emerald-400 px-3 py-1 text-xs font-bold text-slate-950">
+                <span className="absolute left-3 top-3 rounded-full bg-[var(--primary)] px-3 py-1 text-xs font-bold text-[var(--primary-foreground)]">
                   -{discountPercentage}% OFF
                 </span>
               ) : null}
@@ -342,8 +378,8 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                     onClick={() => setPreferredImageUrl(image.url)}
                     className={`overflow-hidden rounded-xl border transition ${
                       isActive
-                        ? "border-cyan-400/70 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
-                        : "border-slate-800 hover:border-slate-600"
+                        ? "border-[var(--accent)] shadow-[0_0_0_1px_var(--accent)]"
+                        : "border-[var(--border)] hover:border-[var(--muted)]"
                     }`}
                     aria-label={`Seleccionar imagen ${index + 1}`}
                   >
@@ -366,9 +402,9 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 mt-8">
-              <div className="soft-card p-4 transition-all hover:border-border/60">
+              <div className="soft-card p-4 transition-all hover:border-[var(--border)]">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
                     <Truck className="h-5 w-5" />
                   </div>
                   <div>
@@ -377,9 +413,9 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                   </div>
                 </div>
               </div>
-              <div className="soft-card p-4 transition-all hover:border-border/60">
+              <div className="soft-card p-4 transition-all hover:border-[var(--border)]">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
@@ -388,7 +424,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                   </div>
                 </div>
               </div>
-              <div className="soft-card p-4 transition-all hover:border-border/60">
+              <div className="soft-card p-4 transition-all hover:border-[var(--border)]">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
                     <CreditCard className="h-5 w-5" />
@@ -433,17 +469,17 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
             </button>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-end gap-3 border-b border-slate-800 pb-6">
-            <span className="text-4xl font-extrabold tracking-tight text-slate-100">
+          <div className="mt-6 flex flex-wrap items-end gap-3 border-b border-[var(--border)] pb-6">
+            <span className="text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
               ${formatPrice(price)}
             </span>
             {compareAtPrice ? (
-              <span className="pb-1 text-sm font-medium text-slate-500 line-through">
+              <span className="pb-1 text-sm font-medium text-[var(--muted)] line-through">
                 ${formatPrice(compareAtPrice)}
               </span>
             ) : null}
             {discountPercentage ? (
-              <span className="mb-1 rounded-full bg-emerald-500/20 px-2.5 py-1 text-[11px] font-bold text-emerald-400">
+              <span className="mb-1 rounded-full bg-[var(--primary)]/20 px-2.5 py-1 text-[11px] font-bold text-[var(--primary)]">
                 Ahorras {discountPercentage}%
               </span>
             ) : null}
@@ -586,7 +622,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                   size="lg"
                   className={clsx(
                     "w-full text-sm font-bold transition-all",
-                    addedFeedback ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""
+                    addedFeedback ? "bg-[var(--primary)] hover:opacity-90 text-[var(--primary-foreground)]" : ""
                   )}
                   disabled={isOutOfStock}
                   onClick={handleAddToCart}

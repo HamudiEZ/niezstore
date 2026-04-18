@@ -168,9 +168,15 @@ export default function AccountAddresses() {
           </div>
 
           {!showForm && (
-            <button onClick={() => { setShowForm(true); setEditingId(null); }} className="btn-ui btn-ui--primary px-4 py-2 text-xs font-bold uppercase rounded-lg flex items-center gap-2">
-              <Plus className="h-3 w-3" /> Nueva
-            </button>
+            addresses.length < 5 ? (
+              <button onClick={() => { setShowForm(true); setEditingId(null); }} className="btn-ui btn-ui--primary px-4 py-2 text-xs font-bold uppercase rounded-lg flex items-center gap-2">
+                <Plus className="h-3 w-3" /> Nueva
+              </button>
+            ) : (
+              <span className="text-[10px] font-bold text-[var(--muted)] uppercase bg-[var(--surface-soft)] px-3 py-2 rounded-lg border border-[var(--border)]">
+                Límite alcanzado (5/5)
+              </span>
+            )
           )}
         </div>
 
@@ -197,7 +203,7 @@ export default function AccountAddresses() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {addresses.map((addr) => (
-              <div key={addr.id} className="admin-list-item p-4 transition-all duration-300 overflow-hidden w-full relative">
+              <div key={addr.id} className="admin-list-item p-4 transition-all duration-300 overflow-hidden w-full relative flex flex-col">
                 {editingId === addr.id ? (
                   <>
                     <p className="text-xs font-bold uppercase tracking-widest text-[var(--accent)] mb-4">Editando dirección</p>
@@ -234,7 +240,7 @@ export default function AccountAddresses() {
                       {addr.city}{addr.postalCode ? ` (${addr.postalCode})` : ""}
                     </p>
 
-                    <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2 pt-4 border-t border-[var(--border)]">
+                    <div className="mt-auto flex flex-col sm:flex-row sm:flex-wrap gap-2 pt-4 border-t border-[var(--border)]">
                       <button onClick={() => setEditingId(addr.id)} className="btn-ui btn-ui--ghost px-3 py-2 sm:py-1 text-[11px] sm:text-[10px] font-bold uppercase rounded-lg sm:rounded-md flex items-center justify-center gap-1 w-full sm:w-auto">
                         <Pencil className="h-3.5 w-3.5 sm:h-3 sm:w-3" /> Editar
                       </button>

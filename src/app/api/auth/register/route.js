@@ -7,8 +7,12 @@ import {
 import { validatePasswordStrength } from "@/lib/password-policy";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request) {
+  const rl = rateLimit(request, { limit: 5, windowMs: 15 * 60 * 1000, keyPrefix: "register" });
+  if (!rl.ok) return NextResponse.json({ error: rl.error }, { status: 429 });
+
   const body = await request.json().catch(() => ({}));
   const fullName = String(body.fullName ?? "").trim();
   const email = normalizeEmail(body.email);
@@ -18,6 +22,13 @@ export async function POST(request) {
     return NextResponse.json(
       { error: "Completa nombre, correo y contrase\u00f1a." },
       { status: 400 },
+    );
+  }
+
+  if (fullName.length > 100) {
+    return NextResponse.json(
+      { error: "El nombre ingresado es demasiado largo." },
+      { status: 400 }
     );
   }
 

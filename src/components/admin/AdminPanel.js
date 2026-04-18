@@ -930,13 +930,15 @@ export default function AdminPanel() {
         current.map((file) => `${file.name}-${file.size}-${file.lastModified}`)
       );
       const next = [...current];
-      incoming.forEach((file) => {
+      const MAX_IMAGES = 5;
+      for (const file of incoming) {
+        if (next.length >= MAX_IMAGES) break;
         const key = `${file.name}-${file.size}-${file.lastModified}`;
         if (!existingKeys.has(key)) {
           next.push(file);
           existingKeys.add(key);
         }
-      });
+      }
       return next;
     });
   };
@@ -979,6 +981,10 @@ export default function AdminPanel() {
     }
     if (compareAtPrice != null && (!Number.isFinite(compareAtPrice) || compareAtPrice <= 0)) {
       setVariantMessage("Precio comparativo invalido.");
+      return;
+    }
+    if (compareAtPrice != null && compareAtPrice <= price) {
+      setVariantMessage("El precio de descuento debe ser mayor al precio actual.");
       return;
     }
     if (!Number.isFinite(stock) || stock < 0) {
@@ -1086,6 +1092,10 @@ export default function AdminPanel() {
       (!Number.isFinite(compareAtPrice) || compareAtPrice <= 0)
     ) {
       setVariantEditMessage("Precio comparativo invalido.");
+      return;
+    }
+    if (compareAtPrice != null && compareAtPrice <= price) {
+      setVariantEditMessage("El precio de descuento debe ser mayor al precio actual.");
       return;
     }
     if (!Number.isFinite(stock) || stock < 0) {

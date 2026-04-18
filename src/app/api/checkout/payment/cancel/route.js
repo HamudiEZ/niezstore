@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(request) {
   try {
@@ -9,13 +10,20 @@ export async function POST(request) {
       return NextResponse.json({ error: "Falta el código de la orden." }, { status: 400 });
     }
 
+    const currentUser = await getCurrentUser();
+
     const existingOrder = await prisma.order.findUnique({
       where: { orderCode },
-      select: { id: true, status: true },
+      select: { id: true, status: true, userId: true },
     });
 
     if (!existingOrder) {
       return NextResponse.json({ error: "Orden no encontrada." }, { status: 404 });
+    }
+
+    // Require authentication match for registered orders
+    if (existingOrder.userId && existingOrder.userId !== currentUser?.id) {
+      return NextResponse.json({ error: "No autorizado para cancelar esta orden." }, { status: 401 });
     }
 
     if (existingOrder.status !== "PENDING_PAYMENT") {

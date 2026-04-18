@@ -85,6 +85,15 @@ export async function PATCH(request, { params }) {
         }
       }
 
+      await tx.orderAuditLog.create({
+        data: {
+          orderId: orderId,
+          adminId: admin.id,
+          action: "STATUS_CHANGED",
+          details: `Estado cambiado de ${currentStatus} a ${status}`,
+        },
+      });
+
       return tx.order.update({
         where: { id: orderId },
         data: { status },

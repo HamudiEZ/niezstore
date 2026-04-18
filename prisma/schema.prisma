@@ -46,6 +46,7 @@ model User {
   sessions     Session[]
   userFavorites UserFavorite[]
   userCartItems UserCartItem[]
+  auditLogs    OrderAuditLog[]
 }
 
 model Session {
@@ -108,7 +109,8 @@ model Product {
   userFavorites UserFavorite[]
   userCartItems UserCartItem[]
 
-  @@index([categoryId])
+  @@index([categoryId, isActive])
+  @@index([isActive, createdAt])
 }
 
 model ProductImage {
@@ -143,6 +145,7 @@ model ProductVariant {
 
   @@index([productId])
   @@index([stock])
+  @@index([isActive, price])
   @@unique([productId, optionSignature])
 }
 
@@ -208,6 +211,7 @@ model Order {
   user             User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   items            OrderItem[]
   payments         Payment[]
+  auditLogs        OrderAuditLog[]
 
   @@index([userId])
   @@index([status, createdAt])
@@ -281,4 +285,19 @@ model UserCartItem {
   @@unique([userId, variantId])
   @@index([userId])
   @@index([variantId])
+}
+
+model OrderAuditLog {
+  id        String   @id @default(cuid())
+  orderId   String
+  adminId   String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([adminId])
 }

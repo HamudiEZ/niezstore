@@ -176,7 +176,7 @@ export default function ProductVariants({
             min="1"
             max={INPUT_LIMITS.priceMax}
             className="admin-input"
-            placeholder="Precio antes de descuento (opcional)"
+            placeholder="Precio anterior (mayor al actual)"
           />
         </div>
         <div className="grid gap-2 md:grid-cols-2">
@@ -331,7 +331,7 @@ export default function ProductVariants({
                           min="1"
                           max={INPUT_LIMITS.priceMax}
                           className="admin-input h-9 text-xs"
-                          placeholder="Precio comparativo"
+                          placeholder="Precio anterior (mayor al actual)"
                         />
                       </div>
                       <div className="grid gap-2 md:grid-cols-2">

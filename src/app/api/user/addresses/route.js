@@ -23,6 +23,12 @@ export async function POST(request) {
 
   const body = await request.json().catch(() => ({}));
   const { label, receiver, line1, line2, city, region, postalCode, countryCode, isDefault } = body;
+  
+  // Count existing addresses to enforce limit
+  const count = await prisma.address.count({ where: { userId: user.id } });
+  if (count >= INPUT_LIMITS.maxAddressesPerUser) {
+    return NextResponse.json({ error: `Has alcanzado el límite de ${INPUT_LIMITS.maxAddressesPerUser} direcciones.` }, { status: 400 });
+  }
 
   if (!receiver?.trim() || !line1?.trim() || !city?.trim()) {
     return NextResponse.json({ error: "Nombre del destinatario, dirección y ciudad son obligatorios." }, { status: 400 });

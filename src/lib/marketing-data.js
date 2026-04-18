@@ -7,7 +7,7 @@ export const heroDeals = [
     imageUrl:
       "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=900&q=80",
     backgroundUrl:
-      "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?auto=format&fit=crop&w=1800&q=80",
     ctaPrimary: "Explorar",
     ctaSecondary: "Ver mas",
     categorySlug: "componentes-pc",
@@ -18,9 +18,9 @@ export const heroDeals = [
     subtitle: "Equipos para oficina, estudio y creacion de contenido.",
     badge: "Top week",
     imageUrl:
-      "https://images.unsplash.com/photo-1517336714739-489689fd1ca8?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
     backgroundUrl:
-      "https://images.unsplash.com/photo-1527443195645-1133f7f28990?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&w=1800&q=80",
     ctaPrimary: "Comprar",
     ctaSecondary: "Computadoras",
     categorySlug: "computadoras",
@@ -33,7 +33,7 @@ export const heroDeals = [
     imageUrl:
       "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=900&q=80",
     backgroundUrl:
-      "https://images.unsplash.com/photo-1601944179066-29786cb9d32a?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=1800&q=80",
     ctaPrimary: "Comprar",
     ctaSecondary: "Electronica",
     categorySlug: "electronica",

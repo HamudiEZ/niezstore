@@ -80,6 +80,14 @@ export async function GET(request) {
       orderBy: { createdAt: "desc" },
       include: {
         payments: true,
+        auditLogs: {
+          include: {
+            admin: {
+              select: { fullName: true }
+            }
+          },
+          orderBy: { createdAt: "desc" }
+        },
         items: {
           include: {
             product: true,

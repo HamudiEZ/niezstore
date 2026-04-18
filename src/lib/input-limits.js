@@ -27,6 +27,7 @@ export const INPUT_LIMITS = {
   checkoutCountry: 2,
   checkoutRegion: 80,
   checkoutLine2: 180,
+  maxAddressesPerUser: 5,
 
   receiptMaxBytes: 5 * 1024 * 1024,          // 5 MB
   receiptCloudinaryFolder: "niezstore/receipts",
