@@ -24,7 +24,8 @@ export default function QuantityControl({
   size = "sm",
   className,
 }) {
-  const numVal = parseInt(value) || min;
+  const parsed = parseInt(value, 10);
+  const numVal = isNaN(parsed) ? min : parsed;
 
   const handleDecrement = () => {
     onChange(Math.max(min, numVal - 1));
