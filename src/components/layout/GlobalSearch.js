@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import clsx from "clsx";
+import { INPUT_LIMITS } from "@/lib/input-limits";
 
 export default function GlobalSearch({ className }) {
   const router = useRouter();
@@ -90,6 +91,7 @@ export default function GlobalSearch({ className }) {
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="Buscar productos"
+          maxLength={INPUT_LIMITS.search}
           className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-soft)]/50 pl-10 pr-10 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted)] focus:border-cyan-400 focus:bg-[var(--surface)] shadow-sm dark:shadow-none"
           autoComplete="off"
         />
@@ -142,8 +144,8 @@ export default function GlobalSearch({ className }) {
             ) : (
               !isSearching && (
                 <li className="px-4 py-3 text-sm text-[var(--muted)] font-medium">
-                  No encontramos productos para "{query}"
-                </li>
+                No encontramos productos para &ldquo;{query.length > 40 ? query.slice(0, 40) + "…" : query}&rdquo;
+              </li>
               )
             )}
           </ul>
@@ -155,8 +157,10 @@ export default function GlobalSearch({ className }) {
               onClick={handleSearchSubmit}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:bg-[var(--surface-soft)] transition"
             >
-              <Search className="h-4 w-4" />
-              <span>Buscar exactamente "{query}"</span>
+              <Search className="h-4 w-4 shrink-0" />
+              <span className="truncate min-w-0">
+                Buscar exactamente &ldquo;{query.length > 40 ? query.slice(0, 40) + "…" : query}&rdquo;
+              </span>
             </button>
           </div>
         </div>

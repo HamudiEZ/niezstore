@@ -34,14 +34,14 @@ export default async function SearchPage({ searchParams }) {
   return (
     <PageShell>
       {/* Breadcrumbs */}
-      <div className="mb-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
-        <Link href="/" className="hover:text-cyan-500 transition">Inicio</Link>
-        <span>/</span>
-        <span className="text-[var(--foreground)]">Búsqueda</span>
+      <div className="mb-6 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+        <Link href="/" className="hover:text-cyan-500 transition shrink-0">Inicio</Link>
+        <span className="shrink-0">/</span>
+        <span className="text-[var(--foreground)] shrink-0">Búsqueda</span>
         {q && (
           <>
-            <span>/</span>
-            <span className="text-cyan-500">"{q}"</span>
+            <span className="shrink-0">/</span>
+            <span className="text-cyan-500 truncate min-w-[50px] max-w-[200px] md:max-w-md">"{q}"</span>
           </>
         )}
       </div>

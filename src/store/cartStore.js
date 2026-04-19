@@ -15,7 +15,6 @@ export const useCartStore = create(
           if (res.ok) {
             const data = await res.json();
             // Map keys if API returns different structure, but here we assume match
-            console.log("Cart pulled from DB. Items:", (data.cart || []).length);
             set({ items: data.cart || [] });
           }
         } catch (error) {
@@ -37,6 +36,45 @@ export const useCartStore = create(
           await get().pullFromDB();
         } catch (error) {
           console.error("Failed to sync cart:", error);
+        }
+      },
+
+      // Background Sync to update stale prices/stock without requiring login
+      refreshLocalPrices: async () => {
+        const currentItems = get().items;
+        if (currentItems.length === 0) return;
+        
+        try {
+          const res = await fetch("/api/products/batch", {
+            method: "POST",
+            body: JSON.stringify({ variantIds: currentItems.map(i => i.variant.id) })
+          });
+          if (res.ok) {
+            const { variants } = await res.json();
+            if (!variants) return;
+            
+            const variantMap = new Map(variants.map(v => [v.id, v]));
+            const updatedItems = currentItems.map(item => {
+              const fresh = variantMap.get(item.variant.id);
+              if (!fresh || !fresh.isActive || !fresh.product.isActive) {
+                // Si ya no existe o est\u00e1 inactivo, lo botamos
+                return null;
+              }
+              return {
+                ...item,
+                variant: {
+                   ...item.variant,
+                   price: Number(fresh.price),
+                   compareAtPrice: fresh.compareAtPrice ? Number(fresh.compareAtPrice) : null,
+                   stock: fresh.stock
+                }
+              };
+            }).filter(Boolean); // filtra items inactivos
+            
+            set({ items: updatedItems });
+          }
+        } catch (error) {
+          console.error("Failed to refresh local prices:", error);
         }
       },
 
@@ -152,6 +190,9 @@ export const useCartStore = create(
     }),
     {
       name: 'niez-cart-storage',
+      onRehydrateStorage: () => (state) => {
+        if (state) state.refreshLocalPrices();
+      }
     }
   )
 );

@@ -34,7 +34,7 @@ function SuccessContent() {
             <Package className="h-5 w-5" />
             <span className="text-sm font-semibold uppercase tracking-wider">Número de Orden</span>
           </div>
-          <span className="text-2xl font-mono font-bold text-[var(--foreground)]">
+          <span className="w-full text-center text-base sm:text-lg font-mono font-bold text-[var(--foreground)] break-all leading-relaxed">
             {orderCode}
           </span>
           <p className="text-xs text-[var(--muted)]">

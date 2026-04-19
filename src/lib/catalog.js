@@ -99,37 +99,13 @@ export async function getCategoryBrands(slug) {
   return results.map((r) => r.brand).filter(Boolean).sort();
 }
 
-export async function getProductsByCategorySlug(slug, options = {}) {
-  if (!slug) return { category: null, products: [], totalItems: 0, totalPages: 0 };
+// ─── Shared helpers para filtrado de productos (BUG-08) ──────────────────────
 
-  const {
-    page = 1,
-    pageSize = 20,
-    minPrice,
-    maxPrice,
-    brand,
-    sort,
-    onSale,
-  } = options;
-
-  const skip = (Math.max(1, page) - 1) * pageSize;
-
-  // First get the category
-  const category = await prisma.category.findUnique({ where: { slug } });
-  if (!category) return { category: null, products: [], totalItems: 0, totalPages: 0 };
-
-  const where = {
-    categoryId: category.id,
-    isActive: true,
-    variants: { some: { isActive: true } },
-  };
-
-  // Add brand filter if provided
+function applyProductFilters(where, { brand, minPrice, maxPrice, onSale }) {
   if (brand) {
     where.brand = { equals: brand, mode: "insensitive" };
   }
 
-  // Add price and sale filters
   if (minPrice || maxPrice || onSale) {
     where.variants = {
       some: {
@@ -143,29 +119,50 @@ export async function getProductsByCategorySlug(slug, options = {}) {
     };
   }
 
-  let orderBy = { createdAt: "desc" };
-  if (sort === "oldest") orderBy = { createdAt: "asc" };
-  if (sort === "name_asc") orderBy = { name: "asc" };
-  if (sort === "name_desc") orderBy = { name: "desc" };
+  return where;
+}
 
-  const [products, totalItems] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: productCardInclude,
-      orderBy,
-      skip,
-      take: pageSize,
-    }),
-    prisma.product.count({ where }),
-  ]);
+function buildProductOrderBy(sort) {
+  if (sort === "oldest") return { createdAt: "asc" };
+  if (sort === "name_asc") return { name: "asc" };
+  if (sort === "name_desc") return { name: "desc" };
+  return { createdAt: "desc" };
+}
 
-  const finalProducts = products
+function postFilterOnSale(products, onSale) {
+  return products
     .map(toProductCard)
     .filter(p => {
       if (!p) return false;
       if (onSale) return p.discountPercentage !== null && p.discountPercentage > 0;
       return true;
     });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getProductsByCategorySlug(slug, options = {}) {
+  if (!slug) return { category: null, products: [], totalItems: 0, totalPages: 0 };
+
+  const { page = 1, pageSize = 20, minPrice, maxPrice, brand, sort, onSale } = options;
+  const skip = (Math.max(1, page) - 1) * pageSize;
+
+  const category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) return { category: null, products: [], totalItems: 0, totalPages: 0 };
+
+  const where = applyProductFilters(
+    { categoryId: category.id, isActive: true, variants: { some: { isActive: true } } },
+    { brand, minPrice, maxPrice, onSale }
+  );
+
+  const orderBy = buildProductOrderBy(sort);
+
+  const [products, totalItems] = await Promise.all([
+    prisma.product.findMany({ where, include: productCardInclude, orderBy, skip, take: pageSize }),
+    prisma.product.count({ where }),
+  ]);
+
+  const finalProducts = postFilterOnSale(products, onSale);
 
   return {
     category,
@@ -241,70 +238,30 @@ export async function getRelatedProducts(categoryId, excludeId, take = 4) {
 export async function searchProducts(query, options = {}) {
   if (!query) return { products: [], totalItems: 0, totalPages: 0, currentPage: 1 };
 
-  const {
-    page = 1,
-    pageSize = 20,
-    minPrice,
-    maxPrice,
-    brand,
-    sort,
-    onSale,
-  } = options;
-
+  const { page = 1, pageSize = 20, minPrice, maxPrice, brand, sort, onSale } = options;
   const skip = (Math.max(1, page) - 1) * pageSize;
 
-  const where = {
-    isActive: true,
-    variants: { some: { isActive: true } },
-    OR: [
-      { name: { contains: query, mode: "insensitive" } },
-      { brand: { contains: query, mode: "insensitive" } },
-      { description: { contains: query, mode: "insensitive" } },
-    ],
-  };
+  const where = applyProductFilters(
+    {
+      isActive: true,
+      variants: { some: { isActive: true } },
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { brand: { contains: query, mode: "insensitive" } },
+        { description: { contains: query, mode: "insensitive" } },
+      ],
+    },
+    { brand, minPrice, maxPrice, onSale }
+  );
 
-  // Add brand filter if provided
-  if (brand) {
-    where.brand = { equals: brand, mode: "insensitive" };
-  }
-
-  // Add price filters (filtering based on the cheapest variant)
-  if (minPrice || maxPrice || onSale) {
-    where.variants = {
-      some: {
-        isActive: true,
-        AND: [
-          minPrice ? { price: { gte: Number(minPrice) } } : {},
-          maxPrice ? { price: { lte: Number(maxPrice) } } : {},
-          onSale ? { compareAtPrice: { not: null } } : {},
-        ],
-      },
-    };
-  }
-
-  let orderBy = { createdAt: "desc" };
-  if (sort === "oldest") orderBy = { createdAt: "asc" };
-  if (sort === "name_asc") orderBy = { name: "asc" };
-  if (sort === "name_desc") orderBy = { name: "desc" };
+  const orderBy = buildProductOrderBy(sort);
 
   const [products, totalItems] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: productCardInclude,
-      orderBy,
-      skip,
-      take: pageSize,
-    }),
+    prisma.product.findMany({ where, include: productCardInclude, orderBy, skip, take: pageSize }),
     prisma.product.count({ where }),
   ]);
 
-  const finalProducts = products
-    .map(toProductCard)
-    .filter(p => {
-      if (!p) return false;
-      if (onSale) return p.discountPercentage !== null && p.discountPercentage > 0;
-      return true;
-    });
+  const finalProducts = postFilterOnSale(products, onSale);
 
   return {
     products: finalProducts,

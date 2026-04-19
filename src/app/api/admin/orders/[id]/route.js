@@ -1,30 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
-
-const ALLOWED_STATUSES = new Set([
-  "PENDING_PAYMENT",
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-]);
-
-const STATUS_TRANSITIONS = {
-  PENDING_PAYMENT: ["PENDING_PAYMENT", "PAID", "CANCELLED"],
-  PAID: ["PAID", "PROCESSING", "CANCELLED"],
-  PROCESSING: ["PROCESSING", "SHIPPED", "CANCELLED"],
-  SHIPPED: ["SHIPPED", "DELIVERED"],
-  DELIVERED: ["DELIVERED"],
-  CANCELLED: ["CANCELLED"],
-};
-
-function normalizeOrderStatus(value) {
-  const normalized = String(value ?? "").trim().toUpperCase();
-  if (normalized === "PENDING") return "PENDING_PAYMENT";
-  return normalized;
-}
+import {
+  ALLOWED_STATUSES,
+  STATUS_TRANSITIONS,
+  normalizeOrderStatus,
+} from "@/lib/order-status";
 
 export async function PATCH(request, { params }) {
   const admin = await requireAdmin();

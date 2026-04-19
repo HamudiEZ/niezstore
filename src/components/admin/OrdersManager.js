@@ -36,60 +36,15 @@ const STATUS_FILTERS = [
   { value: "CANCELLED", label: "Cancelado" },
 ];
 
-const STATUS_LABELS = {
-  PAID: "Pagado",
-  PENDING: "Pendiente",
-  PENDING_PAYMENT: "Pendiente de pago",
-  PROCESSING: "En proceso",
-  SHIPPED: "Enviado",
-  DELIVERED: "Entregado",
-  CANCELLED: "Cancelado",
-  REFUNDED: "Reembolsado",
-};
-
-const ORDER_STATUS_OPTIONS = [
-  { value: "PENDING_PAYMENT", label: "Pendiente de pago" },
-  { value: "PAID", label: "Pagado" },
-  { value: "PROCESSING", label: "En proceso" },
-  { value: "SHIPPED", label: "Enviado" },
-  { value: "DELIVERED", label: "Entregado" },
-  { value: "CANCELLED", label: "Cancelado" },
-];
-
-const STATUS_TRANSITIONS = {
-  PENDING_PAYMENT: ["PENDING_PAYMENT", "PAID", "CANCELLED"],
-  PAID: ["PAID", "PROCESSING", "CANCELLED"],
-  PROCESSING: ["PROCESSING", "SHIPPED", "CANCELLED"],
-  SHIPPED: ["SHIPPED", "DELIVERED"],
-  DELIVERED: ["DELIVERED"],
-  CANCELLED: ["CANCELLED"],
-};
-
-const FILTER_STATUS_MAP = {
-  all: null,
-  PAID: ["PAID"],
-  PENDING: ["PENDING_PAYMENT", "PENDING"],
-};
-
-function isPendingStatus(status) {
-  return FILTER_STATUS_MAP.PENDING.includes(status);
-}
-
-function normalizeOrderStatus(status) {
-  if (status === "PENDING") return "PENDING_PAYMENT";
-  return status;
-}
-
-function getAllowedStatusOptions(currentStatus) {
-  const normalizedStatus = normalizeOrderStatus(currentStatus);
-  const allowedStatuses = STATUS_TRANSITIONS[normalizedStatus] || [normalizedStatus];
-  return ORDER_STATUS_OPTIONS.filter((option) => allowedStatuses.includes(option.value));
-}
-
-function getStatusLabel(status) {
-  if (!status) return "Sin estado";
-  return STATUS_LABELS[status] || status;
-}
+import {
+  ORDER_STATUS_OPTIONS,
+  STATUS_LABELS,
+  STATUS_TRANSITIONS,
+  normalizeOrderStatus,
+  isPendingStatus,
+  getStatusLabel,
+  getAllowedStatusOptions,
+} from "@/lib/order-status";
 
 function getStatusClass(status) {
   if (status === "PAID" || status === "DELIVERED") {
@@ -299,7 +254,7 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
     }
   };
 
-  const filteredOrders = useMemo(() => orders, [orders]);
+  const filteredOrders = orders;
 
   const summary = useMemo(() => {
     const totalRevenue = filteredOrders.reduce(

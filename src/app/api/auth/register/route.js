@@ -25,9 +25,16 @@ export async function POST(request) {
     );
   }
 
-  if (fullName.length > 100) {
+  if (fullName.length > 60) {
     return NextResponse.json(
       { error: "El nombre ingresado es demasiado largo." },
+      { status: 400 }
+    );
+  }
+
+  if (email.length > 120) {
+    return NextResponse.json(
+      { error: "El correo ingresado es demasiado largo." },
       { status: 400 }
     );
   }

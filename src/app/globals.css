@@ -108,6 +108,10 @@
   box-sizing: border-box;
 }
 
+button {
+  cursor: pointer;
+}
+
 html,
 body {
   width: 100%;
@@ -479,7 +483,8 @@ a {
 }
 
 .btn-ui--primary:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.15);
+  box-shadow: 0 4px 16px rgba(20, 184, 166, 0.35);
 }
 
 .btn-ui--outline {
@@ -489,7 +494,15 @@ a {
 }
 
 .btn-ui--outline:hover {
-  background: var(--admin-surface-soft);
+  background: rgb(30 41 59); /* slate-800 */
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text);
+}
+
+:root.light .btn-ui--outline:hover {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--foreground);
 }
 
 .btn-ui--ghost {
@@ -499,6 +512,7 @@ a {
 .btn-ui--ghost:hover {
   background: var(--admin-surface-soft);
   color: var(--admin-text);
+  box-shadow: inset 0 0 0 1px var(--admin-border);
 }
 
 .theme-toggle {

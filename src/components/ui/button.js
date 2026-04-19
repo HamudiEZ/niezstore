@@ -1,8 +1,8 @@
-﻿import clsx from "clsx";
+import clsx from "clsx";
 
 export function Button({ className, variant = "default", size = "md", ...props }) {
   const base =
-    "inline-flex items-center justify-center rounded-xl font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 disabled:pointer-events-none disabled:opacity-60";
+    "inline-flex items-center justify-center rounded-xl font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 disabled:pointer-events-none disabled:opacity-60 cursor-pointer active:scale-95";
 
   const variants = {
     default: "btn-ui btn-ui--primary",

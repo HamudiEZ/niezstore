@@ -146,6 +146,11 @@ export async function PUT(request, { params }) {
   return NextResponse.json({ product });
 }
 
+/**
+ * Soft-delete: marca el producto como inactivo (isActive = false).
+ * No se elimina permanentemente para preservar integridad referencial
+ * con ordenes e historial existente.
+ */
 export async function DELETE(request, { params }) {
   const admin = await requireAdmin();
   if (!admin) {

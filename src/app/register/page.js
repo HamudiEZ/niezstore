@@ -14,6 +14,8 @@ import {
   MIN_PASSWORD_LENGTH,
   validatePasswordStrength,
 } from "../../lib/password-policy";
+import { INPUT_LIMITS } from "../../lib/input-limits";
+import CharCount from "../../components/admin/CharCount";
 
 function getStrengthState(password, checksPassed) {
   if (!password) {
@@ -113,24 +115,32 @@ export default function RegisterPage() {
           }
         >
           <form className="space-y-3" onSubmit={handleSubmit}>
-            <input
-              className="form-input"
-              placeholder="Nombre completo"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              autoComplete="name"
-              required
-            />
+            <div className="admin-input-wrap">
+              <input
+                className="form-input"
+                placeholder="Nombre completo"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                autoComplete="name"
+                maxLength={INPUT_LIMITS.userFullName}
+                required
+              />
+              <CharCount value={fullName} max={INPUT_LIMITS.userFullName} />
+            </div>
 
-            <input
-              type="email"
-              className="form-input"
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
+            <div className="admin-input-wrap">
+              <input
+                type="email"
+                className="form-input"
+                placeholder="Correo electrónico"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                maxLength={INPUT_LIMITS.userEmail}
+                required
+              />
+              <CharCount value={email} max={INPUT_LIMITS.userEmail} />
+            </div>
 
             <div className="relative">
               <input

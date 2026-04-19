@@ -12,7 +12,6 @@ export const useFavoritesStore = create(
           const res = await fetch("/api/user/favorites", { cache: "no-store" });
           if (res.ok) {
             const data = await res.json();
-            console.log("Favorites pulled from DB:", data.favorites.length);
             set({ favorites: data.favorites || [] });
           }
         } catch (error) {
@@ -37,6 +36,49 @@ export const useFavoritesStore = create(
           await get().pullFromDB();
         } catch (error) {
           console.error("Failed to sync favorites:", error);
+        }
+      },
+
+      // Background Sync to update stale prices without requiring login
+      refreshLocalFavorites: async () => {
+        const currentItems = get().favorites;
+        if (currentItems.length === 0) return;
+        
+        try {
+          const res = await fetch("/api/products/batch", {
+            method: "POST",
+            body: JSON.stringify({ productIds: currentItems.map(p => p.id) })
+          });
+          if (res.ok) {
+            const { products } = await res.json();
+            if (!products) return;
+            
+            const productMap = new Map(products.map(p => [p.id, p]));
+            const updatedFavorites = currentItems.map(item => {
+              const fresh = productMap.get(item.id);
+              if (!fresh || !fresh.isActive) return null;
+              
+              const firstVariant = fresh.variants?.[0];
+              const price = firstVariant ? Number(firstVariant.price) : 0;
+              const previousPrice = firstVariant?.compareAtPrice ? Number(firstVariant.compareAtPrice) : null;
+              
+              let discountPercentage = null;
+              if (previousPrice && price && previousPrice > price) {
+                discountPercentage = Math.round(((previousPrice - price) / previousPrice) * 100);
+              }
+
+              return {
+                ...item,
+                price,
+                previousPrice,
+                discountPercentage
+              };
+            }).filter(Boolean);
+            
+            set({ favorites: updatedFavorites });
+          }
+        } catch (error) {
+          console.error("Failed to refresh local favorites:", error);
         }
       },
 
@@ -90,6 +132,9 @@ export const useFavoritesStore = create(
     }),
     {
       name: 'niez-favorites-storage',
+      onRehydrateStorage: () => (state) => {
+        if (state) state.refreshLocalFavorites();
+      }
     }
   )
 );

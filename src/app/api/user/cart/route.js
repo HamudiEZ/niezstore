@@ -80,10 +80,18 @@ export async function POST(request) {
     // Highest Quantity Override Merge
     if (action === "merge" && Array.isArray(items)) {
       if (items.length > 0) {
-        const variantIds = items.map(item => item.variant.id);
+        const rawVariantIds = items.map(item => item.variant.id);
+
+        // Validar que las variantes realmente sigan existiendo en la base de datos
+        const validVariants = await prisma.productVariant.findMany({
+          where: { id: { in: rawVariantIds } },
+          select: { id: true, productId: true }
+        });
+        const validVariantMap = new Map(validVariants.map(v => [v.id, v.productId]));
+        const validVariantIds = Array.from(validVariantMap.keys());
 
         const existingItems = await prisma.userCartItem.findMany({
-          where: { userId, variantId: { in: variantIds } }
+          where: { userId, variantId: { in: validVariantIds } }
         });
         const existingMap = new Map(existingItems.map(item => [item.variantId, item]));
 
@@ -91,7 +99,12 @@ export async function POST(request) {
 
         for (const localItem of items) {
           const variantId = localItem.variant.id;
-          const productId = localItem.product.id;
+          
+          // Si el id del cliente ya no existe en la DB, ignoramos este item
+          if (!validVariantMap.has(variantId)) continue; 
+
+          // Tomamos el productId oficial de la DB, no el del cliente, por seguridad referencial
+          const productId = validVariantMap.get(variantId);
           const quantity = localItem.quantity;
           const existing = existingMap.get(variantId);
 

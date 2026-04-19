@@ -21,9 +21,18 @@ export const INPUT_LIMITS = {
   stockMax: 1000000,
   priceMax: 100000000,
 
-  checkoutFullName: 120,
+  checkoutPhone: 22,
+  checkoutPostalCode: 10,
+
+  userEmail: 120,
+  userFullName: 60,
+
+  addressLabel: 40,
+  addressReceiver: 60,
+
+  checkoutFullName: 60,
   checkoutLine1: 180,
-  checkoutCity: 80,
+  checkoutCity: 60,
   checkoutCountry: 2,
   checkoutRegion: 80,
   checkoutLine2: 180,
