@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin";
 import { normalizeSearchTerm } from "@/lib/input-limits";
 
 const DEFAULT_PAGE = 1;
@@ -32,9 +32,9 @@ function normalizeStatusFilter(value) {
 
 export async function GET(request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "No autorizado." }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);

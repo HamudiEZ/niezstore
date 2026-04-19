@@ -16,6 +16,7 @@ import {
 } from "@/lib/checkout-validation";
 import { INPUT_LIMITS } from "@/lib/input-limits";
 import { MapPin } from "lucide-react";
+import CharCount from "@/components/admin/CharCount";
 
 const formatPrice = (value) =>
   typeof value === "number" && Number.isFinite(value)
@@ -222,19 +223,21 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Nombre completo"
                 />
+                <CharCount value={formData.fullName} max={INPUT_LIMITS.checkoutFullName} />
                 <FieldError message={fieldErrors.fullName} />
               </div>
 
               <div>
                 <input
                   required
-                  type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
+                  maxLength={INPUT_LIMITS.userEmail}
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Correo electronico"
                 />
+                <CharCount value={formData.email} max={INPUT_LIMITS.userEmail} />
                 <FieldError message={fieldErrors.email} />
               </div>
 
@@ -245,10 +248,11 @@ export default function CheckoutPage() {
                   onChange={handleInputChange}
                   inputMode="tel"
                   autoComplete="tel"
-                  maxLength={22}
+                  maxLength={INPUT_LIMITS.checkoutPhone}
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Telefono (opcional). Ej: +595 981 123456"
                 />
+                <CharCount value={formData.phone} max={INPUT_LIMITS.checkoutPhone} />
                 <FieldError message={fieldErrors.phone} />
               </div>
             </div>
@@ -265,6 +269,7 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Direccion exacta"
                 />
+                <CharCount value={formData.line1} max={INPUT_LIMITS.checkoutLine1} />
                 <FieldError message={fieldErrors.line1} />
               </div>
 
@@ -278,6 +283,7 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Ciudad"
                 />
+                <CharCount value={formData.city} max={INPUT_LIMITS.checkoutCity} />
                 <FieldError message={fieldErrors.city} />
               </div>
 
@@ -288,10 +294,11 @@ export default function CheckoutPage() {
                   onChange={handleInputChange}
                   inputMode="numeric"
                   autoComplete="postal-code"
-                  maxLength={10}
+                  maxLength={INPUT_LIMITS.checkoutPostalCode}
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Codigo postal"
                 />
+                <CharCount value={formData.postalCode} max={INPUT_LIMITS.checkoutPostalCode} />
                 <FieldError message={fieldErrors.postalCode} />
               </div>
             </div>

@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
+import QuantityControl from "@/components/ui/quantity-control";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
@@ -479,7 +480,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
               </span>
             ) : null}
             {discountPercentage ? (
-              <span className="mb-1 rounded-full bg-[var(--primary)]/20 px-2.5 py-1 text-[11px] font-bold text-[var(--primary)]">
+              <span className="mb-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
                 Ahorras {discountPercentage}%
               </span>
             ) : null}
@@ -567,55 +568,15 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
             >
               {product.description}
             </p>
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
-              <div className="flex h-12 w-full max-w-[140px] items-center justify-between rounded-xl border border-border bg-surface-soft/30 px-1 py-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuantity((current) =>
-                      Math.max(1, (parseInt(current) || 1) - 1),
-                    )
-                  }
-                  className="flex h-full w-10 items-center justify-center rounded-lg text-muted transition hover:bg-surface-soft hover:text-foreground disabled:opacity-50"
-                  aria-label="Disminuir cantidad"
-                  disabled={isOutOfStock}
-                >
-                  -
-                </button>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={quantity}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "" || /^\d+$/.test(val)) {
-                      setQuantity(val);
-                    }
-                  }}
-                  onBlur={() => {
-                    let val = parseInt(quantity, 10);
-                    if (isNaN(val) || val < 1) val = 1;
-                    if (val > maxQuantity) val = maxQuantity;
-                    setQuantity(val);
-                  }}
-                  disabled={isOutOfStock}
-                  className="w-12 bg-transparent text-center text-sm font-bold text-foreground outline-none placeholder:text-muted disabled:opacity-50"
-                  aria-label="Cantidad"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuantity((current) =>
-                      Math.min(maxQuantity, (parseInt(current) || 1) + 1),
-                    )
-                  }
-                  className="flex h-full w-10 items-center justify-center rounded-lg text-muted transition hover:bg-surface-soft hover:text-foreground disabled:opacity-50"
-                  aria-label="Aumentar cantidad"
-                  disabled={isOutOfStock}
-                >
-                  +
-                </button>
-              </div>
+            <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center">
+              <QuantityControl
+                value={quantity}
+                onChange={setQuantity}
+                max={maxQuantity}
+                disabled={isOutOfStock}
+                allowInput={true}
+                size="md"
+              />
 
               <div className="flex w-full flex-col gap-2 sm:flex-row">
                 <Button

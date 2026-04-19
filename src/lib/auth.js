@@ -76,6 +76,13 @@ export async function getCurrentUser() {
   return session.user;
 }
 
+/**
+ * @serverless-caveat
+ * `lastSessionCleanupAt` es estado local de modulo. En un entorno serverless (Vercel, AWS Lambda)
+ * o multi-worker, esto se reinicia en cada cold start. El throttle de 5 minutos solo aplica
+ * por instancia. En alta concurrencia, multiples instancias ejecutaran el cleanup a la vez.
+ * Como el deleteMany es idempotente, no es critico, pero el throttling es ilusorio en la nube.
+ */
 export async function maybeCleanupExpiredSessions() {
   const now = Date.now();
   if (now - lastSessionCleanupAt < SESSION_CLEANUP_INTERVAL_MS) return;

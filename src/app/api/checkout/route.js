@@ -101,57 +101,43 @@ export async function POST(request) {
     }
 
     const normalizedItems = itemsValidation.items;
-    const variantIds = normalizedItems.map((item) => item.variantId);
-
-    const dbVariants = await prisma.productVariant.findMany({
-      where: { id: { in: variantIds } },
-      include: { product: true },
-    });
-
-    if (dbVariants.length !== variantIds.length) {
-      return NextResponse.json(
-        { error: "Uno o mas productos ya no estan disponibles." },
-        { status: 400 }
-      );
-    }
-
-    let subtotalAmount = 0;
-    const orderItemsRecord = [];
-
-    for (const item of normalizedItems) {
-      const dbVariant = dbVariants.find((entry) => entry.id === item.variantId);
-      if (!dbVariant) {
-        return NextResponse.json(
-          { error: "Uno o mas productos ya no estan disponibles." },
-          { status: 400 }
-        );
-      }
-
-      if (dbVariant.stock < item.quantity) {
-        return NextResponse.json(
-          { error: `Stock insuficiente para: ${dbVariant.product.name}` },
-          { status: 400 }
-        );
-      }
-
-      const unitPrice = Number(dbVariant.price);
-      const lineTotal = unitPrice * item.quantity;
-
-      subtotalAmount += lineTotal;
-
-      orderItemsRecord.push({
-        productId: dbVariant.productId,
-        variantId: dbVariant.id,
-        quantity: item.quantity,
-        unitPrice,
-        lineTotal,
-      });
-    }
-
-    const shippingAmount = 0;
-    const totalAmount = subtotalAmount + shippingAmount;
 
     const order = await prisma.$transaction(async (tx) => {
+      // Verificar stock y calcular precios DENTRO de la transacción
+      // para evitar race conditions entre lecturas y escrituras concurrentes.
+      let subtotalAmount = 0;
+      const orderItemsRecord = [];
+
+      for (const item of normalizedItems) {
+        const dbVariant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          include: { product: true },
+        });
+
+        if (!dbVariant || !dbVariant.isActive) {
+          throw new Error("Uno o mas productos ya no estan disponibles.");
+        }
+
+        if (dbVariant.stock < item.quantity) {
+          throw new Error(`Stock insuficiente para: ${dbVariant.product.name}`);
+        }
+
+        const unitPrice = Number(dbVariant.price);
+        const lineTotal = unitPrice * item.quantity;
+        subtotalAmount += lineTotal;
+
+        orderItemsRecord.push({
+          productId: dbVariant.productId,
+          variantId: dbVariant.id,
+          quantity: item.quantity,
+          unitPrice,
+          lineTotal,
+        });
+      }
+
+      const shippingAmount = 0;
+      const totalAmount = subtotalAmount + shippingAmount;
+
       const createdOrder = await tx.order.create({
         data: {
           customerName: formValidation.normalized.fullName,

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import SectionCard from "@/components/ui/section-card";
 import { MapPin, Home, Building, Plus, Pencil, Trash2, Star, Loader2 } from "lucide-react";
 import { sanitizeNameInput, sanitizePostalCodeInput } from "@/lib/checkout-validation";
+import { INPUT_LIMITS } from "@/lib/input-limits";
+import CharCount from "@/components/admin/CharCount";
 
 const EMPTY_FORM = {
   label: "",
@@ -42,14 +44,32 @@ function AddressForm({ initial = EMPTY_FORM, onSave, onCancel, saving }) {
     "h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] transition";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <input name="label" placeholder="Etiqueta (ej: Casa, Trabajo)" value={form.label} onChange={handleChange} className={fieldClass} maxLength={40} />
-        <input name="receiver" placeholder="Destinatario *" value={form.receiver} onChange={handleChange} required className={fieldClass} maxLength={120} />
-        <input name="line1" placeholder="Dirección exacta *" value={form.line1} onChange={handleChange} required className={`${fieldClass} sm:col-span-2`} maxLength={180} />
-        <input name="line2" placeholder="Piso, Depto, Referencia (opcional)" value={form.line2} onChange={handleChange} className={`${fieldClass} sm:col-span-2`} maxLength={180} />
-        <input name="city" placeholder="Ciudad *" value={form.city} onChange={handleChange} required className={fieldClass} maxLength={80} />
-        <input name="postalCode" placeholder="Código postal" value={form.postalCode} onChange={handleChange} inputMode="numeric" className={fieldClass} maxLength={10} />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="admin-input-wrap">
+          <input name="label" placeholder="Etiqueta (ej: Casa, Trabajo)" value={form.label} onChange={handleChange} className={fieldClass} maxLength={INPUT_LIMITS.addressLabel} />
+          <CharCount value={form.label} max={INPUT_LIMITS.addressLabel} />
+        </div>
+        <div className="admin-input-wrap">
+          <input name="receiver" placeholder="Destinatario *" value={form.receiver} onChange={handleChange} required className={fieldClass} maxLength={INPUT_LIMITS.addressReceiver} />
+          <CharCount value={form.receiver} max={INPUT_LIMITS.addressReceiver} />
+        </div>
+        <div className="admin-input-wrap sm:col-span-2">
+          <input name="line1" placeholder="Dirección exacta *" value={form.line1} onChange={handleChange} required className={fieldClass} maxLength={INPUT_LIMITS.checkoutLine1} />
+          <CharCount value={form.line1} max={INPUT_LIMITS.checkoutLine1} />
+        </div>
+        <div className="admin-input-wrap sm:col-span-2">
+          <input name="line2" placeholder="Piso, Depto, Referencia (opcional)" value={form.line2} onChange={handleChange} className={fieldClass} maxLength={INPUT_LIMITS.checkoutLine2} />
+          <CharCount value={form.line2} max={INPUT_LIMITS.checkoutLine2} />
+        </div>
+        <div className="admin-input-wrap">
+          <input name="city" placeholder="Ciudad *" value={form.city} onChange={handleChange} required className={fieldClass} maxLength={INPUT_LIMITS.checkoutCity} />
+          <CharCount value={form.city} max={INPUT_LIMITS.checkoutCity} />
+        </div>
+        <div className="admin-input-wrap">
+          <input name="postalCode" placeholder="Código postal" value={form.postalCode} onChange={handleChange} inputMode="numeric" className={fieldClass} maxLength={10} />
+          <CharCount value={form.postalCode} max={10} />
+        </div>
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--foreground)]">

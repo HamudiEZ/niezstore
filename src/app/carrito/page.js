@@ -9,6 +9,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import QuantityControl from "@/components/ui/quantity-control";
 
 const formatPrice = (value) =>
   typeof value === "number" && Number.isFinite(value)
@@ -109,22 +110,12 @@ export default function CartPage() {
                 
                 <div className="flex items-end justify-between mt-4">
                   <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1">
-                      <button 
-                        onClick={() => updateQuantity(item.variant.id, item.quantity - 1, isAuthenticated)}
-                        className="flex h-8 w-8 items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] transition"
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center text-sm font-bold text-[var(--foreground)]">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(item.variant.id, item.quantity + 1, isAuthenticated)}
-                        className="flex h-8 w-8 items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] transition"
-                      >
-                        +
-                      </button>
-                    </div>
-                    
+                    <QuantityControl
+                      value={item.quantity}
+                      onChange={(newQty) => updateQuantity(item.variant.id, newQty, isAuthenticated)}
+                      max={item.variant.stock > 0 ? item.variant.stock : 99}
+                    />
+
                     <button 
                       onClick={() => removeItem(item.variant.id, isAuthenticated)}
                       className="text-xs font-bold text-rose-500 hover:text-rose-400 transition hidden sm:block"

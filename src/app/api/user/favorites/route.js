@@ -73,11 +73,20 @@ export async function POST(request) {
 
     if (action === "merge" && Array.isArray(productIds)) {
       if (productIds.length > 0) {
-        const data = productIds.map(id => ({ userId, productId: id }));
-        await prisma.userFavorite.createMany({
-          data,
-          skipDuplicates: true, // Postgres handles this
+        // Filtrar IDs contra los que de hecho existen en la DB para evitar Foreign Key error
+        const validProducts = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true }
         });
+        const validProductIds = validProducts.map(p => p.id);
+
+        if (validProductIds.length > 0) {
+          const data = validProductIds.map(id => ({ userId, productId: id }));
+          await prisma.userFavorite.createMany({
+            data,
+            skipDuplicates: true, // Postgres handles this
+          });
+        }
       }
       return NextResponse.json({ success: true });
     }

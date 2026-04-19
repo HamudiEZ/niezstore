@@ -14,11 +14,11 @@ export default function PageHeader({
   return (
     <header className={clsx(asCard && "soft-card p-4 md:p-5", className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           {eyebrow ? (
             <p
               className={clsx(
-                "page-eyebrow",
+                "page-eyebrow break-words",
                 eyebrowClassName
               )}
             >
@@ -28,7 +28,7 @@ export default function PageHeader({
           {title ? (
             <h1
               className={clsx(
-                "page-title mt-1 text-2xl font-extrabold tracking-tight",
+                "page-title mt-1 text-2xl font-extrabold tracking-tight break-words",
                 titleClassName
               )}
             >
@@ -38,7 +38,7 @@ export default function PageHeader({
           {description ? (
             <p
               className={clsx(
-                "page-subtitle mt-2 text-sm",
+                "page-subtitle mt-2 text-sm break-words",
                 descriptionClassName
               )}
             >

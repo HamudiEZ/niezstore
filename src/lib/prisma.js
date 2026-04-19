@@ -11,12 +11,7 @@ const createPrismaClient = () =>
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
-const hasSessionDelegate = (client) =>
-  !!client && typeof client.session !== "undefined";
-
-const cachedClient = globalForPrisma.prisma;
-export const prisma =
-  hasSessionDelegate(cachedClient) ? cachedClient : createPrismaClient();
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
