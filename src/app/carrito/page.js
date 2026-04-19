@@ -113,7 +113,7 @@ export default function CartPage() {
                     <QuantityControl
                       value={item.quantity}
                       onChange={(newQty) => updateQuantity(item.variant.id, newQty, isAuthenticated)}
-                      max={item.variant.stock > 0 ? item.variant.stock : 99}
+                      max={typeof item.variant.stock === 'number' ? item.variant.stock : 99}
                     />
 
                     <button 

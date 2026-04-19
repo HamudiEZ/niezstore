@@ -60,8 +60,11 @@ export const useCartStore = create(
                 // Si ya no existe o est\u00e1 inactivo, lo botamos
                 return null;
               }
+              const safeQuantity = Math.min(item.quantity, fresh.stock);
+              
               return {
                 ...item,
+                quantity: safeQuantity,
                 variant: {
                    ...item.variant,
                    price: Number(fresh.price),
@@ -89,7 +92,7 @@ export const useCartStore = create(
         if (existingItemIndex >= 0) {
           const newQty = Math.min(
             updatedItems[existingItemIndex].quantity + quantity,
-            variant.stock > 0 ? variant.stock : 99
+            typeof variant.stock === 'number' ? variant.stock : 99
           );
           updatedItems[existingItemIndex].quantity = newQty;
           finalQuantity = newQty;
@@ -141,7 +144,7 @@ export const useCartStore = create(
           return;
         }
 
-        const checkedQty = Math.min(newQuantity, item.variant.stock > 0 ? item.variant.stock : 99);
+        const checkedQty = Math.min(newQuantity, typeof item.variant.stock === 'number' ? item.variant.stock : 99);
         
         set((state) => ({
           items: state.items.map((i) => {

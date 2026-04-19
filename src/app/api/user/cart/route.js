@@ -57,7 +57,7 @@ export async function GET(request) {
           stock: v.stock,
           summary: summary || "Variante unica",
         },
-        quantity: item.quantity,
+        quantity: Math.min(item.quantity, typeof v.stock === 'number' ? v.stock : 99),
       };
     });
 

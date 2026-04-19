@@ -45,11 +45,13 @@ export default function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const totalCartItems = useCartStore((state) => state.getTotalItems());
+  const refreshLocalPrices = useCartStore((state) => state.refreshLocalPrices);
 
   useEffect(() => {
     setMounted(true);
     checkAuth();
-  }, [pathname, checkAuth]);
+    refreshLocalPrices();
+  }, [pathname, checkAuth, refreshLocalPrices]);
 
   // Sync Logic on Login
   useEffect(() => {
