@@ -2,47 +2,68 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { X, ChevronDown, Filter } from "lucide-react";
+import { X, Filter } from "lucide-react";
+
+function PriceRangeInputs({ initialMin, initialMax, onApply }) {
+  const [minPrice, setMinPrice] = useState(initialMin);
+  const [maxPrice, setMaxPrice] = useState(initialMax);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (minPrice !== initialMin || maxPrice !== initialMax) {
+        onApply({ minPrice, maxPrice });
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [minPrice, maxPrice, initialMin, initialMax, onApply]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        min="0"
+        placeholder="Min"
+        value={minPrice}
+        onChange={(e) => setMinPrice(e.target.value)}
+        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
+      />
+      <span className="text-[var(--muted)]"> - </span>
+      <input
+        type="number"
+        min="0"
+        placeholder="Max"
+        value={maxPrice}
+        onChange={(e) => setMaxPrice(e.target.value)}
+        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
+      />
+    </div>
+  );
+}
 
 export default function SearchFilters({ brands = [] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-
-  const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
-  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Sync state if URL changes from outside (e.g., clear all)
-  useEffect(() => {
-    setMinPrice(searchParams.get("minPrice") || "");
-    setMaxPrice(searchParams.get("maxPrice") || "");
-  }, [searchParams]);
+  const urlMin = searchParams.get("minPrice") || "";
+  const urlMax = searchParams.get("maxPrice") || "";
 
-  const updateUrl = useCallback((changes) => {
-    const current = new URLSearchParams(searchParams.toString());
-    Object.entries(changes).forEach(([k, v]) => {
-      if (v === "" || v === false || v === null || v === undefined) {
-        current.delete(k);
-      } else {
-        current.set(k, v);
-      }
-    });
-    current.delete("page");
-    router.push(`${pathname}?${current.toString()}`);
-  }, [searchParams, pathname, router]);
-
-  // Debounce prices
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const currentMin = searchParams.get("minPrice") || "";
-      const currentMax = searchParams.get("maxPrice") || "";
-      if (minPrice !== currentMin || maxPrice !== currentMax) {
-        updateUrl({ minPrice, maxPrice });
-      }
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [minPrice, maxPrice, searchParams, updateUrl]);
+  const updateUrl = useCallback(
+    (changes) => {
+      const current = new URLSearchParams(searchParams.toString());
+      Object.entries(changes).forEach(([k, v]) => {
+        if (v === "" || v === false || v === null || v === undefined) {
+          current.delete(k);
+        } else {
+          current.set(k, v);
+        }
+      });
+      current.delete("page");
+      router.push(`${pathname}?${current.toString()}`);
+    },
+    [searchParams, pathname, router]
+  );
 
   const clearFilters = () => {
     const params = new URLSearchParams();
@@ -55,6 +76,7 @@ export default function SearchFilters({ brands = [] }) {
     <>
       {/* Mobile Toggle Button */}
       <button
+        type="button"
         onClick={() => setIsMobileOpen(true)}
         className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 font-semibold text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 lg:hidden"
       >
@@ -63,14 +85,16 @@ export default function SearchFilters({ brands = [] }) {
       </button>
 
       {/* Sidebar Container */}
-      <aside className={`
-        fixed inset-0 z-[60] flex flex-col bg-[var(--background)] p-6 transition-transform duration-300
-        lg:relative lg:inset-auto lg:z-0 lg:flex lg:translate-x-0 lg:rounded-2xl lg:border lg:border-[var(--border)] lg:bg-[var(--surface)] lg:p-6 lg:dark:border-[var(--border)] lg:dark:bg-[var(--surface-soft)]/30
+      <aside
+        className={`
+        fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-[var(--background)] p-6 transition-transform duration-300
+        lg:relative lg:inset-auto lg:z-0 lg:flex lg:translate-x-0 lg:overflow-visible lg:rounded-2xl lg:border lg:border-[var(--border)] lg:bg-[var(--surface)] lg:p-6 lg:dark:border-[var(--border)] lg:dark:bg-[var(--surface-soft)]/30
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-      `}>
+      `}
+      >
         <div className="flex items-center justify-between lg:hidden">
           <h2 className="text-xl font-bold text-[var(--foreground)]">Filtros</h2>
-          <button onClick={() => setIsMobileOpen(false)} className="p-2">
+          <button type="button" onClick={() => setIsMobileOpen(false)} className="p-2" aria-label="Cerrar filtros">
             <X className="h-6 w-6 text-[var(--muted)]" />
           </button>
         </div>
@@ -81,23 +105,12 @@ export default function SearchFilters({ brands = [] }) {
             <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
               Rango de Precio
             </h3>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                placeholder="Min"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
-              />
-              <span className="text-[var(--muted)]"> - </span>
-              <input
-                type="number"
-                placeholder="Max"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
-              />
-            </div>
+            <PriceRangeInputs
+              key={`${urlMin}:${urlMax}`}
+              initialMin={urlMin}
+              initialMax={urlMax}
+              onApply={updateUrl}
+            />
           </div>
 
           {/* Sort By */}
@@ -149,7 +162,14 @@ export default function SearchFilters({ brands = [] }) {
                       onChange={() => updateUrl({ brand })}
                       className="shrink-0 h-4 w-4 rounded border-[var(--border)] text-cyan-500 focus:ring-cyan-500 bg-[var(--surface-soft)]"
                     />
-                    <span className={`text-sm truncate min-w-0 ${searchParams.get("brand") === brand ? "font-bold text-cyan-500" : "text-[var(--foreground)]"}`} title={brand}>
+                    <span
+                      className={`text-sm truncate min-w-0 ${
+                        searchParams.get("brand") === brand
+                          ? "font-bold text-cyan-500"
+                          : "text-[var(--foreground)]"
+                      }`}
+                      title={brand}
+                    >
                       {brand}
                     </span>
                   </label>
@@ -161,6 +181,7 @@ export default function SearchFilters({ brands = [] }) {
           {/* Actions */}
           <div className="space-y-3 pt-4">
             <button
+              type="button"
               onClick={clearFilters}
               className="w-full text-sm font-medium text-[var(--muted)] underline underline-offset-4 hover:text-[var(--foreground)]"
             >

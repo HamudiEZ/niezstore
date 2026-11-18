@@ -1,22 +1,31 @@
-import "dotenv/config";
+try {
+  process.loadEnvFile?.();
+} catch {
+  // Ignore missing .env when environment variables are provided externally.
+}
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
-const adapter = connectionString ? new PrismaPg({ connectionString }) : undefined;
+if (!connectionString) {
+  throw new Error("DATABASE_URL no esta definida. Configura .env antes de ejecutar el seed.");
+}
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
+
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminEmail = String(process.env.SEED_ADMIN_EMAIL ?? "").trim().toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   const adminPasswordHash = process.env.SEED_ADMIN_PASSWORD_HASH;
-  const adminFullName = process.env.SEED_ADMIN_FULL_NAME ?? "Admin Niez Store";
+  const adminFullName =
+    String(process.env.SEED_ADMIN_FULL_NAME ?? "Admin Niez Store").trim() ||
+    "Admin Niez Store";
   const isBcryptHash =
     typeof adminPasswordHash === "string" &&
-    (adminPasswordHash.startsWith("$2a$") ||
-      adminPasswordHash.startsWith("$2b$") ||
-      adminPasswordHash.startsWith("$2y$"));
+    BCRYPT_HASH_REGEX.test(adminPasswordHash);
 
   let resolvedPasswordHash = null;
   if (adminPassword) {
@@ -25,7 +34,7 @@ async function main() {
     resolvedPasswordHash = adminPasswordHash;
   } else if (adminPasswordHash) {
     throw new Error(
-      "SEED_ADMIN_PASSWORD_HASH no es bcrypt. Usa SEED_ADMIN_PASSWORD o un hash bcrypt valido."
+      "SEED_ADMIN_PASSWORD_HASH no es bcrypt valido. Usa SEED_ADMIN_PASSWORD o un hash bcrypt real."
     );
   }
 
@@ -176,18 +185,18 @@ async function main() {
     },
   ];
 
+  const categoryBySlug = new Map();
   for (const category of seedCategories) {
-    await prisma.category.upsert({
+    const upserted = await prisma.category.upsert({
       where: { slug: category.slug },
       update: { name: category.name, description: category.description },
       create: category,
     });
+    categoryBySlug.set(category.slug, upserted);
   }
 
   for (const seed of seedProducts) {
-    const category = await prisma.category.findUnique({
-      where: { slug: seed.categorySlug },
-    });
+    const category = categoryBySlug.get(seed.categorySlug);
     if (!category) continue;
 
     const existing = await prisma.product.findUnique({
@@ -250,7 +259,7 @@ async function main() {
     console.log(`Admin seeded: ${adminEmail}`);
   } else {
     console.log(
-      "No admin seeded. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (or a bcrypt SEED_ADMIN_PASSWORD_HASH)."
+      "No admin seeded. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (or a valid bcrypt SEED_ADMIN_PASSWORD_HASH)."
     );
   }
 }

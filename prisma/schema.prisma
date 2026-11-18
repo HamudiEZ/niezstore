@@ -111,6 +111,7 @@ model Product {
 
   @@index([categoryId, isActive])
   @@index([isActive, createdAt])
+  @@index([createdAt])
 }
 
 model ProductImage {
@@ -215,6 +216,7 @@ model Order {
 
   @@index([userId])
   @@index([status, createdAt])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -253,6 +255,7 @@ model Payment {
 
   @@index([orderId])
   @@index([status, createdAt])
+  @@index([externalId])
 }
 
 model UserFavorite {
@@ -285,6 +288,7 @@ model UserCartItem {
   @@unique([userId, variantId])
   @@index([userId])
   @@index([variantId])
+  @@index([productId])
 }
 
 model OrderAuditLog {
@@ -298,6 +302,6 @@ model OrderAuditLog {
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   admin     User     @relation(fields: [adminId], references: [id], onDelete: Restrict)
 
-  @@index([orderId])
+  @@index([orderId, createdAt])
   @@index([adminId])
 }

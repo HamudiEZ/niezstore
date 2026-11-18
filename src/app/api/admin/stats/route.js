@@ -9,23 +9,35 @@ export async function GET() {
   }
 
   try {
-    const [totalCategories, totalProducts, totalVariants, lowStockCount] = await Promise.all([
-      prisma.category.count(),
-      prisma.product.count(),
-      prisma.productVariant.count(),
-      prisma.productVariant.count({ where: { stock: { lt: 5 } } })
-    ]);
+    const [totalCategories, totalProducts, totalVariants, lowStockCount] =
+      await Promise.all([
+        prisma.category.count(),
+        prisma.product.count({ where: { isActive: true } }),
+        prisma.productVariant.count({
+          where: { isActive: true, product: { isActive: true } },
+        }),
+        prisma.productVariant.count({
+          where: {
+            stock: { lte: 5 },
+            isActive: true,
+            product: { isActive: true },
+          },
+        }),
+      ]);
 
     return NextResponse.json({
       stats: {
         totalCategories,
         totalProducts,
         totalVariants,
-        lowStockCount
-      }
+        lowStockCount,
+      },
     });
   } catch (error) {
     console.error("Admin stats error:", error);
-    return NextResponse.json({ error: "No se pudieron cargar estadisticas" }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudieron cargar estadisticas" },
+      { status: 500 }
+    );
   }
 }

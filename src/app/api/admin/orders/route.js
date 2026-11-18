@@ -6,6 +6,7 @@ import { normalizeSearchTerm } from "@/lib/input-limits";
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
+const MAX_EXPORT_SIZE = 1000;
 
 function parsePositiveInteger(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ""), 10);
@@ -40,9 +41,11 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const search = normalizeSearchTerm(searchParams.get("search"));
     const status = normalizeStatusFilter(searchParams.get("status"));
+    const isExport = searchParams.get("export") === "1";
+    const cap = isExport ? MAX_EXPORT_SIZE : MAX_PAGE_SIZE;
     const pageSize = Math.min(
       parsePositiveInteger(searchParams.get("pageSize"), DEFAULT_PAGE_SIZE),
-      MAX_PAGE_SIZE
+      cap
     );
     const requestedPage = parsePositiveInteger(
       searchParams.get("page"),
@@ -61,6 +64,7 @@ export async function GET(request) {
         { orderCode: { contains: search, mode: "insensitive" } },
         { customerName: { contains: search, mode: "insensitive" } },
         { customerEmail: { contains: search, mode: "insensitive" } },
+        { customerPhone: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -79,18 +83,46 @@ export async function GET(request) {
       take: pageSize,
       orderBy: { createdAt: "desc" },
       include: {
-        payments: true,
+        payments: {
+          select: {
+            id: true,
+            provider: true,
+            status: true,
+            receiptUrl: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
         auditLogs: {
           include: {
             admin: {
-              select: { fullName: true }
-            }
+              select: { fullName: true },
+            },
           },
-          orderBy: { createdAt: "desc" }
+          orderBy: { createdAt: "desc" },
         },
         items: {
           include: {
-            product: true,
+            product: {
+              select: { id: true, name: true, slug: true },
+            },
+            variant: {
+              select: {
+                id: true,
+                sku: true,
+                variantOptions: {
+                  include: {
+                    optionValue: {
+                      include: {
+                        option: {
+                          select: { name: true, position: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -106,7 +138,6 @@ export async function GET(request) {
         totalAll,
       },
     });
-
   } catch (error) {
     console.error("Admin Orders API Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

@@ -13,6 +13,7 @@ export default function ProductVariants({
   onSelectOptionValue,
   onSubmit,
   onToggleStatus,
+  onDeleteVariant,
   editVariantId,
   editForm,
   editMessage,
@@ -63,8 +64,8 @@ export default function ProductVariants({
 
   const renderImagePicker = (currentUrl, isEditing = false) => {
     const images = selectedProduct.images || [];
-    
-    if (images.length === 0) {
+
+    if (images.length === 0 && !currentUrl) {
       return (
         <p className="admin-muted text-[10px]">
           No hay imágenes subidas. Sube fotos primero para asignarlas.
@@ -93,7 +94,7 @@ export default function ProductVariants({
           >
             Ninguna
           </button>
-          
+
           {/* Product Images */}
           {images.map((img) => (
             <button
@@ -124,6 +125,11 @@ export default function ProductVariants({
             </button>
           ))}
         </div>
+        {images.length === 0 && currentUrl ? (
+          <p className="admin-muted text-[10px]">
+            No hay imágenes cargadas en el producto; haz clic en &ldquo;Ninguna&rdquo; para desvincular la imagen anterior.
+          </p>
+        ) : null}
       </div>
     );
   };
@@ -163,7 +169,8 @@ export default function ProductVariants({
             value={form.price}
             onChange={onChange}
             type="number"
-            min="1"
+            step="0.01"
+            min="0.01"
             max={INPUT_LIMITS.priceMax}
             className="admin-input"
             placeholder="Precio"
@@ -173,7 +180,8 @@ export default function ProductVariants({
             value={form.compareAtPrice}
             onChange={onChange}
             type="number"
-            min="1"
+            step="0.01"
+            min="0.01"
             max={INPUT_LIMITS.priceMax}
             className="admin-input"
             placeholder="Precio anterior (mayor al actual)"
@@ -185,6 +193,7 @@ export default function ProductVariants({
             value={form.stock}
             onChange={onChange}
             type="number"
+            step="1"
             min="0"
             max={INPUT_LIMITS.stockMax}
             className="admin-input"
@@ -228,6 +237,8 @@ export default function ProductVariants({
           <div className="mt-2 space-y-2">
             {selectedProduct.variants.map((variant) => {
               const incomplete = isIncompleteVariant(variant);
+              const isDeleting = busyAction === `variant-delete-${variant.id}`;
+              const isToggling = busyAction === `variant-toggle-${variant.id}`;
               return (
                 <div
                   key={variant.id}
@@ -262,6 +273,7 @@ export default function ProductVariants({
                       <button
                         type="button"
                         onClick={() => onStartEdit?.(variant)}
+                        disabled={isDeleting}
                         className={`variant-action-btn variant-action-btn--edit ${
                           editVariantId === variant.id
                             ? "variant-action-btn--edit-active"
@@ -279,7 +291,8 @@ export default function ProductVariants({
                             : "variant-action-btn--activate"
                         }`}
                         disabled={
-                          busyAction === `variant-toggle-${variant.id}` ||
+                          isToggling ||
+                          isDeleting ||
                           (incomplete && !variant.isActive)
                         }
                         title={
@@ -288,12 +301,22 @@ export default function ProductVariants({
                             : undefined
                         }
                       >
-                        {busyAction === `variant-toggle-${variant.id}`
+                        {isToggling
                           ? "..."
                           : variant.isActive
                             ? "Desactivar"
                             : "Activar"}
                       </button>
+                      {onDeleteVariant ? (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteVariant(variant.id)}
+                          disabled={isDeleting || isToggling}
+                          className="variant-action-btn variant-action-btn--deactivate"
+                        >
+                          {isDeleting ? "..." : "Eliminar"}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                   <p className="mt-1 text-xs admin-subtitle">{getVariantLabel(variant)}</p>
@@ -318,7 +341,8 @@ export default function ProductVariants({
                           value={editForm.price}
                           onChange={onEditChange}
                           type="number"
-                          min="1"
+                          step="0.01"
+                          min="0.01"
                           max={INPUT_LIMITS.priceMax}
                           className="admin-input h-9 text-xs"
                           placeholder="Precio"
@@ -328,7 +352,8 @@ export default function ProductVariants({
                           value={editForm.compareAtPrice}
                           onChange={onEditChange}
                           type="number"
-                          min="1"
+                          step="0.01"
+                          min="0.01"
                           max={INPUT_LIMITS.priceMax}
                           className="admin-input h-9 text-xs"
                           placeholder="Precio anterior (mayor al actual)"
@@ -340,6 +365,7 @@ export default function ProductVariants({
                           value={editForm.stock}
                           onChange={onEditChange}
                           type="number"
+                          step="1"
                           min="0"
                           max={INPUT_LIMITS.stockMax}
                           className="admin-input h-9 text-xs"

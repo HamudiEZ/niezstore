@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AccountSidebar from "./AccountSidebar";
 import AccountProfile from "./AccountProfile";
 import AccountOrders from "./AccountOrders";
 import AccountAddresses from "./AccountAddresses";
 import AccountSecurity from "./AccountSecurity";
 
-export default function AccountClient({ user, orders }) {
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState("profile");
+const ALLOWED_TABS = new Set(["profile", "orders", "addresses", "security"]);
 
-  useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    if (tabParam && ["profile", "orders", "addresses", "security"].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [searchParams]);
+export default function AccountClient({ user, orders }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = ALLOWED_TABS.has(tabParam) ? tabParam : "profile";
+
+  const handleTabChange = (nextTab) => {
+    if (!ALLOWED_TABS.has(nextTab)) return;
+    router.replace(`/cuenta?tab=${nextTab}`, { scroll: false });
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -38,7 +39,7 @@ export default function AccountClient({ user, orders }) {
     <div className="grid gap-6 lg:grid-cols-[280px_1fr] mt-8">
       {/* Sidebar Navigation */}
       <div className="space-y-4">
-        <AccountSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <AccountSidebar activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
 
       {/* Main Content Area */}

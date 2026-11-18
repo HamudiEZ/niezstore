@@ -3,19 +3,19 @@
 import {
   Heart,
   Menu,
-  Search,
   ShoppingCart,
   User,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ModeToggle from "../ui/mode-toggle";
 import GlobalSearch from "./GlobalSearch";
 import { useCartStore } from "@/store/cartStore";
 import { useFavoritesStore } from "@/store/favoritesStore";
 import { useAuthStore } from "@/store/authStore";
+import { useMounted } from "@/lib/use-mounted";
 
 const navItems = [
   { href: "/", label: "Inicio" },
@@ -41,26 +41,25 @@ export default function Navbar() {
   const accountMenuRef = useRef(null);
 
   const [open, setOpen] = useState(false);
-  const { user, isAuthenticated, checkAuth, logout: storeLogout } = useAuthStore();
+  const { user, checkAuth, logout: storeLogout } = useAuthStore();
   const [accountOpen, setAccountOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const totalCartItems = useCartStore((state) => state.getTotalItems());
   const refreshLocalPrices = useCartStore((state) => state.refreshLocalPrices);
 
   useEffect(() => {
-    setMounted(true);
     checkAuth();
     refreshLocalPrices();
-  }, [pathname, checkAuth, refreshLocalPrices]);
+  }, [checkAuth, refreshLocalPrices]);
 
-  // Sync Logic on Login
+  // Sync cart and favorites whenever the active user ID changes
+  const userId = user?.id ?? null;
   useEffect(() => {
-    if (isAuthenticated && mounted) {
-      // Trigger sync for both stores
-      useCartStore.getState().syncWithDB();
-      useFavoritesStore.getState().syncWithDB();
+    if (mounted && userId) {
+      useCartStore.getState().syncForUser(userId);
+      useFavoritesStore.getState().syncForUser(userId);
     }
-  }, [isAuthenticated, mounted]);
+  }, [userId, mounted]);
 
   useEffect(() => {
     const onPointerDown = (event) => {
@@ -73,23 +72,10 @@ export default function Navbar() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  const visibleNavItems = useMemo(
-    () =>
-      navItems.filter((item) => {
-        if (!item.adminOnly) return true;
-        return user?.role === "ADMIN";
-      }),
-    [user]
-  );
   const hideNavbar = hiddenNavbarRoutes.has(pathname);
 
   const handleLogout = async () => {
     await storeLogout();
-    
-    // Clear LOCAL stores only on logout (don't clear DB)
-    useCartStore.getState().clearCart(false);
-    useFavoritesStore.getState().clearFavorites();
-
     setAccountOpen(false);
     setOpen(false);
     router.replace("/");
@@ -235,7 +221,7 @@ export default function Navbar() {
         </div>
 
         <nav className="mt-3 hidden items-center gap-5 border-t border-slate-800 pt-3 text-sm font-medium text-slate-300 md:flex">
-          {visibleNavItems.map((item) => (
+          {navItems.map((item) => (
             <Link key={item.href} href={item.href} className="hover:text-cyan-300 nav-link-hover">
               {item.label}
             </Link>
@@ -244,7 +230,7 @@ export default function Navbar() {
 
         {open && (
           <nav className="mt-3 grid gap-1 rounded-xl border border-slate-700 bg-slate-900/90 p-2 text-sm font-medium text-slate-200 md:hidden">
-            {visibleNavItems.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

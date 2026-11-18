@@ -2,8 +2,8 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import AuthPanel from "../../components/ui/auth-panel";
 import AuthTopBar from "../../components/ui/auth-topbar";
 import AuthTrustPanel from "../../components/ui/auth-trust-panel";
@@ -16,22 +16,42 @@ import {
 } from "../../lib/password-policy";
 import { INPUT_LIMITS } from "../../lib/input-limits";
 import CharCount from "../../components/admin/CharCount";
+import { useAuthStore } from "@/store/authStore";
 
-function getStrengthState(password, checksPassed) {
+function getSafeNextPath(rawNext, fallback = "/cuenta") {
+  if (
+    typeof rawNext === "string" &&
+    rawNext.startsWith("/") &&
+    !rawNext.startsWith("//") &&
+    !rawNext.includes("\\")
+  ) {
+    return rawNext;
+  }
+  return fallback;
+}
+
+function getStrengthState(password, checksPassed, maxLengthOk) {
   if (!password) {
     return { label: "Sin evaluar", tone: "idle" };
   }
-  if (checksPassed <= 4) {
+  if (!maxLengthOk || checksPassed <= 5) {
     return { label: "Débil", tone: "weak" };
   }
-  if (checksPassed <= 6) {
+  if (checksPassed <= 7) {
     return { label: "Media", tone: "medium" };
   }
   return { label: "Fuerte", tone: "strong" };
 }
 
-export default function RegisterPage() {
+function RegisterFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawNext = searchParams.get("next");
+  const safeNext = getSafeNextPath(rawNext, "/cuenta");
+  const loginHref = rawNext
+    ? `/login?next=${encodeURIComponent(getSafeNextPath(rawNext, "/"))}`
+    : "/login";
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +71,11 @@ export default function RegisterPage() {
   const strengthPercent = password
     ? Math.round((passedChecks / totalChecks) * 100)
     : 0;
-  const strength = getStrengthState(password, passedChecks);
+  const strength = getStrengthState(
+    password,
+    passedChecks,
+    passwordValidation.checks.maxLength
+  );
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -76,13 +100,17 @@ export default function RegisterPage() {
         body: JSON.stringify({ fullName, email, password }),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         setError(payload.error || "No se pudo crear la cuenta.");
         return;
       }
 
-      router.replace("/cuenta");
+      if (payload.user) {
+        useAuthStore.getState().setUser(payload.user);
+      }
+
+      router.replace(safeNext);
       router.refresh();
     } catch {
       setError("Error de red. Intenta de nuevo.");
@@ -92,136 +120,152 @@ export default function RegisterPage() {
   };
 
   return (
+    <AuthPanel
+      className="mx-auto lg:ml-auto lg:mr-0"
+      title="Crear cuenta"
+      description="Compra más rápido y guarda tus favoritos."
+      footer={
+        <>
+          ¿Ya tienes cuenta?{" "}
+          <Link
+            href={loginHref}
+            className="font-semibold text-cyan-300 hover:underline"
+          >
+            Inicia sesión
+          </Link>
+        </>
+      }
+    >
+      <form className="space-y-3" onSubmit={handleSubmit}>
+        <div className="admin-input-wrap">
+          <input
+            className="form-input"
+            placeholder="Nombre completo"
+            value={fullName}
+            onChange={(event) => setFullName(event.target.value)}
+            autoComplete="name"
+            maxLength={INPUT_LIMITS.userFullName}
+            required
+          />
+          <CharCount value={fullName} max={INPUT_LIMITS.userFullName} />
+        </div>
+
+        <div className="admin-input-wrap">
+          <input
+            type="email"
+            className="form-input"
+            placeholder="Correo electrónico"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            maxLength={INPUT_LIMITS.userEmail}
+            required
+          />
+          <CharCount value={email} max={INPUT_LIMITS.userEmail} />
+        </div>
+
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            className="form-input form-input-with-icon"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="new-password"
+            required
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowPassword((current) => !current)}
+            aria-label={
+              showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+            }
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        <PasswordStrengthMeter
+          label={strength.label}
+          tone={strength.tone}
+          percent={strengthPercent}
+          hint={`Usa ${MIN_PASSWORD_LENGTH}+ caracteres con mayúscula, minúscula, número y símbolo.`}
+          feedback={
+            password && !passwordValidation.isValid
+              ? passwordValidation.errors[0]
+              : ""
+          }
+        />
+
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            className="form-input form-input-with-icon"
+            placeholder="Confirmar contraseña"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            autoComplete="new-password"
+            required
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowConfirmPassword((current) => !current)}
+            aria-label={
+              showConfirmPassword
+                ? "Ocultar contraseña confirmada"
+                : "Mostrar contraseña confirmada"
+            }
+          >
+            {showConfirmPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        {error ? <p className="auth-error">{error}</p> : null}
+
+        <Button
+          className="w-full"
+          size="lg"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Creando..." : "Crear cuenta"}
+        </Button>
+      </form>
+    </AuthPanel>
+  );
+}
+
+export default function RegisterPage() {
+  return (
     <PageShell gap="sm" className="mx-auto w-full max-w-5xl py-1">
       <AuthTopBar />
-
       <section className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_420px]">
         <AuthTrustPanel />
-
-        <AuthPanel
-          className="mx-auto lg:ml-auto lg:mr-0"
-          title="Crear cuenta"
-          description="Compra más rápido y guarda tus favoritos."
-          footer={
-            <>
-              ¿Ya tienes cuenta?{" "}
-              <Link
-                href="/login"
-                className="font-semibold text-cyan-300 hover:underline"
-              >
-                Inicia sesión
-              </Link>
-            </>
+        <Suspense
+          fallback={
+            <AuthPanel
+              className="mx-auto lg:ml-auto lg:mr-0"
+              title="Crear cuenta"
+              description="Cargando..."
+            >
+              <div className="py-8 text-center text-sm text-[var(--muted)]">
+                Cargando...
+              </div>
+            </AuthPanel>
           }
         >
-          <form className="space-y-3" onSubmit={handleSubmit}>
-            <div className="admin-input-wrap">
-              <input
-                className="form-input"
-                placeholder="Nombre completo"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                autoComplete="name"
-                maxLength={INPUT_LIMITS.userFullName}
-                required
-              />
-              <CharCount value={fullName} max={INPUT_LIMITS.userFullName} />
-            </div>
-
-            <div className="admin-input-wrap">
-              <input
-                type="email"
-                className="form-input"
-                placeholder="Correo electrónico"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                maxLength={INPUT_LIMITS.userEmail}
-                required
-              />
-              <CharCount value={email} max={INPUT_LIMITS.userEmail} />
-            </div>
-
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                className="form-input form-input-with-icon"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword((current) => !current)}
-                aria-label={
-                  showPassword
-                    ? "Ocultar contraseña"
-                    : "Mostrar contraseña"
-                }
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            <PasswordStrengthMeter
-              label={strength.label}
-              tone={strength.tone}
-              percent={strengthPercent}
-              hint={`Usa ${MIN_PASSWORD_LENGTH}+ caracteres con mayúscula, minúscula, número y símbolo.`}
-              feedback={
-                password && !passwordValidation.isValid
-                  ? passwordValidation.errors[0]
-                  : ""
-              }
-            />
-
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                className="form-input form-input-with-icon"
-                placeholder="Confirmar contraseña"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                autoComplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowConfirmPassword((current) => !current)}
-                aria-label={
-                  showConfirmPassword
-                    ? "Ocultar contraseña confirmada"
-                    : "Mostrar contraseña confirmada"
-                }
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            {error ? <p className="auth-error">{error}</p> : null}
-
-            <Button
-              className="w-full"
-              size="lg"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? "Creando..." : "Crear cuenta"}
-            </Button>
-          </form>
-        </AuthPanel>
+          <RegisterFormContent />
+        </Suspense>
       </section>
     </PageShell>
   );

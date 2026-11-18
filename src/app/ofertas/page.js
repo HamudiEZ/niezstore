@@ -1,10 +1,12 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import ProductCard from "../../components/ecommerce/ProductCard";
 import { getOfferProducts } from "../../lib/catalog";
 import PageShell from "../../components/ui/page-shell";
 import PageHeader from "../../components/ui/page-header";
-
 import SearchPagination from "../../components/ui/search-pagination";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Ofertas del día | Niez Store",
@@ -13,13 +15,14 @@ export const metadata = {
 
 export default async function OffersPage(props) {
   const resolvedParams = await props.searchParams;
-  const page = parseInt(resolvedParams?.page || "1", 10);
+  const page = Math.max(1, Number.parseInt(String(resolvedParams?.page || "1"), 10) || 1);
   const pageSize = 6;
 
   const offers = await getOfferProducts(100);
-  const paginatedOffers = offers.slice((page - 1) * pageSize, page * pageSize);
   const totalItems = offers.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paginatedOffers = offers.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <PageShell>
@@ -57,12 +60,14 @@ export default async function OffersPage(props) {
 
             {totalItems > pageSize && (
               <div className="mt-4 flex justify-center border-t border-[var(--border)] py-8">
-                <SearchPagination
-                  page={page}
-                  totalPages={totalPages}
-                  totalItems={totalItems}
-                  pageSize={pageSize}
-                />
+                <Suspense fallback={null}>
+                  <SearchPagination
+                    page={safePage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                  />
+                </Suspense>
               </div>
             )}
           </div>

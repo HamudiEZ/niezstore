@@ -1,7 +1,10 @@
+"use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import SectionCard from "@/components/ui/section-card";
 import Pagination from "@/components/ui/pagination";
+import { getButtonClass } from "@/components/ui/button";
 import { Package, Calendar, Search } from "lucide-react";
 
 const formatPrice = (v) => Number(v || 0).toFixed(2);
@@ -9,23 +12,23 @@ const formatDate = (d) => new Intl.DateTimeFormat("es-PY", { dateStyle: "long" }
 
 const mapOrderStatus = (status) => {
   switch (status) {
-    case 'PENDING_PAYMENT':
-    case 'PENDING':
-      return { label: 'PENDIENTE', style: 'status-pill--inactive' };
-    case 'PAID':
-      return { label: 'PAGADO', style: 'status-pill--active' };
-    case 'PROCESSING':
-      return { label: 'EN PROCESO', style: 'status-pill--info' };
-    case 'SHIPPED':
-      return { label: 'ENVIADO', style: 'status-pill--info' };
-    case 'DELIVERED':
-      return { label: 'ENTREGADO', style: 'status-pill--active' };
-    case 'CANCELLED':
-      return { label: 'CANCELADO', style: 'status-pill--danger' };
-    case 'REFUNDED':
-      return { label: 'REEMBOLSADO', style: 'status-pill--danger' };
+    case "PENDING_PAYMENT":
+    case "PENDING":
+      return { label: "PENDIENTE", style: "status-pill--inactive" };
+    case "PAID":
+      return { label: "PAGADO", style: "status-pill--active" };
+    case "PROCESSING":
+      return { label: "EN PROCESO", style: "status-pill--info" };
+    case "SHIPPED":
+      return { label: "ENVIADO", style: "status-pill--info" };
+    case "DELIVERED":
+      return { label: "ENTREGADO", style: "status-pill--active" };
+    case "CANCELLED":
+      return { label: "CANCELADO", style: "status-pill--danger" };
+    case "REFUNDED":
+      return { label: "REEMBOLSADO", style: "status-pill--danger" };
     default:
-      return { label: status || 'DESCONOCIDO', style: 'status-pill--inactive' };
+      return { label: status || "DESCONOCIDO", style: "status-pill--inactive" };
   }
 };
 
@@ -44,8 +47,9 @@ export default function AccountOrders({ orders = [] }) {
       })
     : orders;
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * itemsPerPage;
   const currentOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
   const handleSearch = (e) => {
@@ -61,8 +65,8 @@ export default function AccountOrders({ orders = [] }) {
         <p className="mt-2 text-sm text-[var(--muted)] mb-8">
           Parece que todavía no has realizado ninguna compra con nosotros.
         </p>
-        <Link 
-          href="/categorias" 
+        <Link
+          href="/categorias"
           className="btn-ui btn-ui--primary px-8 py-3 text-sm font-bold uppercase rounded-xl inline-block"
         >
           Explorar catálogo
@@ -108,7 +112,7 @@ export default function AccountOrders({ orders = [] }) {
                     </span>
                     <span className="text-[11px] font-mono text-[var(--muted)] opacity-60">#{order.orderCode}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-5 text-xs text-[var(--muted)]">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Calendar className="h-3.5 w-3.5 opacity-40 text-[var(--accent)]" />
@@ -126,28 +130,52 @@ export default function AccountOrders({ orders = [] }) {
                   <p className="text-2xl font-black text-[var(--foreground)]">${formatPrice(order.totalAmount)}</p>
                 </div>
               </div>
-            
+
               <div className="mt-6 flex flex-wrap gap-2 pt-6 border-t border-[var(--border)]">
                 {order.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center rounded-lg bg-[var(--surface-soft)]/30 px-3 py-1.5 text-[10px] font-bold text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--accent)]/10 transition-colors max-w-[280px]" title={item.product.name}>
-                     <span className="text-[var(--accent)] mr-2 flex-shrink-0">{item.quantity}x</span>
-                     <span className="truncate min-w-0">{item.product.name}</span>
+                  <div
+                    key={idx}
+                    className="flex flex-col rounded-lg bg-[var(--surface-soft)]/30 px-3 py-1.5 text-[10px] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--accent)]/10 transition-colors max-w-[300px]"
+                    title={item.product.name}
+                  >
+                    <div className="flex items-center font-bold min-w-0">
+                      <span className="text-[var(--accent)] mr-2 flex-shrink-0">{item.quantity}x</span>
+                      <span className="truncate min-w-0">{item.product.name}</span>
+                    </div>
+                    {(item.variantSummary || item.variantSku) ? (
+                      <span className="text-[9px] text-[var(--muted)] truncate">
+                        {item.variantSummary || `SKU: ${item.variantSku}`}
+                      </span>
+                    ) : null}
                   </div>
                 ))}
               </div>
+
+              {order.status === "PENDING_PAYMENT" ? (
+                <div className="mt-4 flex justify-end">
+                  <Link
+                    href={`/checkout/pago/${order.orderCode}`}
+                    className={getButtonClass({ size: "sm", variant: "outline" })}
+                  >
+                    Subir comprobante
+                  </Link>
+                </div>
+              ) : null}
             </SectionCard>
           ))}
         </div>
       )}
 
-      <Pagination
-        page={currentPage}
-        totalPages={totalPages}
-        totalItems={filteredOrders.length}
-        pageSize={itemsPerPage}
-        onPageChange={setCurrentPage}
-        className="mt-6"
-      />
+      {filteredOrders.length > 0 ? (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          totalItems={filteredOrders.length}
+          pageSize={itemsPerPage}
+          onPageChange={setCurrentPage}
+          className="mt-6"
+        />
+      ) : null}
     </div>
   );
 }

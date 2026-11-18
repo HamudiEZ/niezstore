@@ -40,7 +40,7 @@ export const INPUT_LIMITS = {
 
   receiptMaxBytes: 5 * 1024 * 1024,          // 5 MB
   receiptCloudinaryFolder: "niezstore/receipts",
-  receiptAllowedFormats: "jpg,jpeg,png,pdf",
+  receiptAllowedFormats: "jpg,jpeg,png,webp,pdf",
 };
 
 export function normalizeSearchTerm(value) {

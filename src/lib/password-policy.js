@@ -1,4 +1,5 @@
 export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PASSWORD_BYTES = 72;
 
 const COMMON_PASSWORDS = new Set([
   "123456",
@@ -13,14 +14,36 @@ const COMMON_PASSWORDS = new Set([
   "admin",
   "admin123",
   "letmein",
+  "welcome",
   "welcome123",
 ]);
 
+const COMMON_BASES = [
+  "password",
+  "qwerty",
+  "admin",
+  "welcome",
+  "letmein",
+  "123456",
+  "111111",
+  "000000",
+  "abc123",
+];
+
 function normalizeToken(value) {
   return String(value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]/g, "");
+}
+
+function getUtf8ByteLength(value) {
+  if (typeof TextEncoder !== "undefined") {
+    return new TextEncoder().encode(value).length;
+  }
+  return Buffer.byteLength(value, "utf8");
 }
 
 function extractPersonalTokens({ email, fullName }) {
@@ -35,7 +58,6 @@ function extractPersonalTokens({ email, fullName }) {
   }
 
   String(fullName ?? "")
-    .toLowerCase()
     .split(/\s+/)
     .map((part) => normalizeToken(part))
     .filter((part) => part.length >= 3)
@@ -47,19 +69,26 @@ function extractPersonalTokens({ email, fullName }) {
 export function getPasswordChecks(password, context = {}) {
   const value = String(password ?? "");
   const lowered = value.toLowerCase();
+  const normalizedAlphaNum = normalizeToken(value);
+  const strippedBase = normalizedAlphaNum.replace(/[0-9]+$/g, "");
   const personalTokens = extractPersonalTokens(context);
   const containsPersonalData = Array.from(personalTokens).some((token) =>
-    lowered.includes(token),
+    normalizedAlphaNum.includes(token),
   );
+  const isCommonPassword =
+    COMMON_PASSWORDS.has(lowered) ||
+    COMMON_PASSWORDS.has(normalizedAlphaNum) ||
+    COMMON_BASES.includes(strippedBase);
 
   return {
     length: value.length >= MIN_PASSWORD_LENGTH,
+    maxLength: getUtf8ByteLength(value) <= MAX_PASSWORD_BYTES,
     lowercase: /[a-z]/.test(value),
     uppercase: /[A-Z]/.test(value),
     number: /[0-9]/.test(value),
     symbol: /[^A-Za-z0-9\s]/.test(value),
     noSpaces: !/\s/.test(value),
-    notCommon: !COMMON_PASSWORDS.has(lowered),
+    notCommon: !isCommonPassword,
     notPersonalData: !containsPersonalData,
   };
 }
@@ -70,35 +99,40 @@ export function validatePasswordStrength(password, context = {}) {
 
   if (!checks.length) {
     errors.push(
-      `La contrase\u00f1a debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`,
+      `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`,
+    );
+  }
+  if (!checks.maxLength) {
+    errors.push(
+      `La contraseña no puede superar ${MAX_PASSWORD_BYTES} bytes.`,
     );
   }
   if (!checks.lowercase) {
     errors.push(
-      "La contrase\u00f1a debe incluir al menos una letra min\u00fascula.",
+      "La contraseña debe incluir al menos una letra minúscula.",
     );
   }
   if (!checks.uppercase) {
     errors.push(
-      "La contrase\u00f1a debe incluir al menos una letra may\u00fascula.",
+      "La contraseña debe incluir al menos una letra mayúscula.",
     );
   }
   if (!checks.number) {
-    errors.push("La contrase\u00f1a debe incluir al menos un n\u00famero.");
+    errors.push("La contraseña debe incluir al menos un número.");
   }
   if (!checks.symbol) {
-    errors.push("La contrase\u00f1a debe incluir al menos un s\u00edmbolo.");
+    errors.push("La contraseña debe incluir al menos un símbolo.");
   }
   if (!checks.noSpaces) {
-    errors.push("La contrase\u00f1a no puede contener espacios.");
+    errors.push("La contraseña no puede contener espacios.");
   }
   if (!checks.notCommon) {
     errors.push(
-      "Esa contrase\u00f1a es demasiado com\u00fan. Elige otra m\u00e1s segura.",
+      "Esa contraseña es demasiado común. Elige otra más segura.",
     );
   }
   if (!checks.notPersonalData) {
-    errors.push("La contrase\u00f1a no debe incluir tu nombre o correo.");
+    errors.push("La contraseña no debe incluir tu nombre o correo.");
   }
 
   return {

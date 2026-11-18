@@ -3,6 +3,8 @@ import { getPublicCategories } from "../../lib/catalog";
 import PageShell from "../../components/ui/page-shell";
 import PageHeader from "../../components/ui/page-header";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Categorías | Niez Store",
   description: "Explora todo el catálogo de Niez Store por categoría.",

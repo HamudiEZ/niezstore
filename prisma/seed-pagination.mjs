@@ -1,9 +1,16 @@
-import "dotenv/config";
+try {
+  process.loadEnvFile?.();
+} catch {
+  // Ignore missing .env when environment variables are provided externally.
+}
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
-const adapter = connectionString ? new PrismaPg({ connectionString }) : undefined;
+if (!connectionString) {
+  throw new Error("DATABASE_URL no esta definida. Configura .env antes de ejecutar el seed.");
+}
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

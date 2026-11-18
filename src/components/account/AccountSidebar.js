@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import SectionCard from "@/components/ui/section-card";
 import { User, Package, MapPin, ShieldCheck, LogOut } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 const MENU_ITEMS = [
   { id: "profile", label: "Perfil", icon: User },
@@ -11,13 +13,13 @@ const MENU_ITEMS = [
 ];
 
 export default function AccountSidebar({ activeTab, onTabChange }) {
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+
   const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
+    await logout();
+    router.replace("/");
+    router.refresh();
   };
 
   return (
@@ -28,6 +30,7 @@ export default function AccountSidebar({ activeTab, onTabChange }) {
 
         return (
           <button
+            type="button"
             key={item.id}
             onClick={() => onTabChange(item.id)}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition font-bold ${
@@ -45,6 +48,7 @@ export default function AccountSidebar({ activeTab, onTabChange }) {
       <div className="my-2 border-t border-[var(--border)] mx-2" />
 
       <button
+        type="button"
         onClick={handleLogout}
         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-[var(--admin-danger)] hover:bg-[var(--admin-danger)]/10 transition shadow-sm active:scale-95"
       >

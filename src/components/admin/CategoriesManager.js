@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import CategoryForm from "./CategoryForm";
 import AdminSectionCard from "./AdminSectionCard";
-import { normalizeSearchTerm } from "@/lib/input-limits";
+import { INPUT_LIMITS, normalizeSearchTerm } from "@/lib/input-limits";
 import { fetchJson } from "@/lib/admin-fetch";
 
 const EMPTY_CATEGORY_FORM = {
@@ -28,7 +28,7 @@ export default function CategoriesManager({ onGoToProducts }) {
     ...EMPTY_PAGINATION,
     pageSize: CATEGORY_PAGE_SIZE,
   });
-  
+
   const [categoryForm, setCategoryForm] = useState(EMPTY_CATEGORY_FORM);
   const [categoryEditId, setCategoryEditId] = useState(null);
   const [categoryEditForm, setCategoryEditForm] = useState(EMPTY_CATEGORY_FORM);
@@ -44,7 +44,7 @@ export default function CategoriesManager({ onGoToProducts }) {
   const refreshCategoriesPage = useCallback(
     async (overrides = {}) => {
       const page = overrides.page ?? categoriesPage;
-      const search = String(overrides.search ?? categorySearchTerm).trim();
+      const search = normalizeSearchTerm(overrides.search ?? categorySearchTerm);
       const params = new URLSearchParams({
         page: String(page),
         pageSize: String(CATEGORY_PAGE_SIZE),
@@ -87,6 +87,15 @@ export default function CategoriesManager({ onGoToProducts }) {
     load();
   }, [refreshCategoriesPage]);
 
+  const handleRetryCategories = async () => {
+    setError("");
+    try {
+      await refreshCategoriesPage({ page: categoriesPage, search: categorySearchTerm });
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleCategoryChange = (event) => {
     const { name, value } = event.target;
     setCategoryForm((current) => ({ ...current, [name]: value }));
@@ -98,7 +107,7 @@ export default function CategoriesManager({ onGoToProducts }) {
   };
 
   const handleCategorySearchChange = (value) => {
-    setCategorySearchTerm(normalizeSearchTerm(value));
+    setCategorySearchTerm(String(value ?? "").slice(0, INPUT_LIMITS.search));
     setCategoriesPage(1);
   };
 
@@ -199,58 +208,69 @@ export default function CategoriesManager({ onGoToProducts }) {
     }
   };
 
-  if (error) {
-    return <div className="text-red-500 font-bold p-4">Error: {error}</div>;
-  }
-
   return (
-    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <CategoryForm
-        form={categoryForm}
-        message={categoryMessage}
-        messageTone={categoryMessageTone}
-        disabled={busyAction === "category"}
-        onChange={handleCategoryChange}
-        onSubmit={handleCreateCategory}
-        categories={categories}
-        totalCount={categoriesMeta.totalAll}
-        filteredCount={categoriesMeta.total}
-        page={categoriesMeta.page}
-        totalPages={categoriesMeta.totalPages}
-        pageSize={categoriesMeta.pageSize}
-        searchTerm={categorySearchTerm}
-        onSearchTermChange={handleCategorySearchChange}
-        onPageChange={setCategoriesPage}
-        editingCategoryId={categoryEditId}
-        editForm={categoryEditForm}
-        onStartEdit={handleStartCategoryEdit}
-        onEditChange={handleCategoryEditChange}
-        onCancelEdit={handleCancelCategoryEdit}
-        onSubmitEdit={handleUpdateCategory}
-        onDeleteCategory={handleDeleteCategory}
-        busyAction={busyAction}
-      />
-      <AdminSectionCard title="Flujo recomendado">
-        <p className="text-sm admin-subtitle">
-          Crea categorias primero y luego pasa al modulo de productos para
-          asignarlas.
-        </p>
-        <div className="admin-note mt-4 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide admin-subtitle">
-            Recordatorio
-          </p>
-          <p className="mt-1 text-xs admin-muted">
-            Si una categoria tiene productos asociados no se puede eliminar.
-          </p>
+    <div className="space-y-4">
+      {error ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-500 dark:text-rose-300">
+          <span className="font-semibold">Error: {error}</span>
+          <button
+            type="button"
+            onClick={handleRetryCategories}
+            className="variant-action-btn variant-action-btn--edit"
+          >
+            Reintentar
+          </button>
         </div>
-        <button
-          type="button"
-          className="admin-tab admin-tab--active mt-4 px-3 py-2 text-sm font-semibold"
-          onClick={onGoToProducts}
-        >
-          Ir al modulo de productos
-        </button>
-      </AdminSectionCard>
-    </section>
+      ) : null}
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <CategoryForm
+          form={categoryForm}
+          message={categoryMessage}
+          messageTone={categoryMessageTone}
+          disabled={busyAction === "category"}
+          onChange={handleCategoryChange}
+          onSubmit={handleCreateCategory}
+          categories={categories}
+          totalCount={categoriesMeta.totalAll}
+          filteredCount={categoriesMeta.total}
+          page={categoriesMeta.page}
+          totalPages={categoriesMeta.totalPages}
+          pageSize={categoriesMeta.pageSize}
+          searchTerm={categorySearchTerm}
+          onSearchTermChange={handleCategorySearchChange}
+          onPageChange={setCategoriesPage}
+          editingCategoryId={categoryEditId}
+          editForm={categoryEditForm}
+          onStartEdit={handleStartCategoryEdit}
+          onEditChange={handleCategoryEditChange}
+          onCancelEdit={handleCancelCategoryEdit}
+          onSubmitEdit={handleUpdateCategory}
+          onDeleteCategory={handleDeleteCategory}
+          busyAction={busyAction}
+        />
+        <AdminSectionCard title="Flujo recomendado">
+          <p className="text-sm admin-subtitle">
+            Crea categorias primero y luego pasa al modulo de productos para
+            asignarlas.
+          </p>
+          <div className="admin-note mt-4 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide admin-subtitle">
+              Recordatorio
+            </p>
+            <p className="mt-1 text-xs admin-muted">
+              Si una categoria tiene productos asociados no se puede eliminar.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="admin-tab admin-tab--active mt-4 px-3 py-2 text-sm font-semibold"
+            onClick={onGoToProducts}
+          >
+            Ir al modulo de productos
+          </button>
+        </AdminSectionCard>
+      </section>
+    </div>
   );
 }

@@ -7,25 +7,22 @@ import PageHeader from "@/components/ui/page-header";
 import ProductCard from "@/components/ecommerce/ProductCard";
 import SearchPagination from "@/components/ui/search-pagination";
 import { useFavoritesStore } from "@/store/favoritesStore";
-import { useState, useEffect, Suspense } from "react";
+import { useMounted } from "@/lib/use-mounted";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 function FavoritesContent() {
   const { favorites } = useFavoritesStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const searchParams = useSearchParams();
-  const page = parseInt(searchParams.get("page") || "1", 10);
+  const rawPage = Number.parseInt(searchParams.get("page") || "1", 10);
   const pageSize = 6;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const totalPages = Math.max(1, Math.ceil(favorites.length / pageSize));
+  const safePage = Math.min(Math.max(1, Number.isFinite(rawPage) ? rawPage : 1), totalPages);
 
   if (!mounted) {
     return (
-      <>
-        <PageHeader title="Mis Favoritos" description="Cargando tus productos guardados..." />
-      </>
+      <PageHeader title="Mis Favoritos" description="Cargando tus productos guardados..." />
     );
   }
 
@@ -80,16 +77,18 @@ function FavoritesContent() {
       <div className="mt-8">
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-4 w-full">
-            {favorites.slice((page - 1) * pageSize, page * pageSize).map((product) => (
-              <ProductCard key={product.id} product={product} variant="list" />
-            ))}
+            {favorites
+              .slice((safePage - 1) * pageSize, safePage * pageSize)
+              .map((product) => (
+                <ProductCard key={product.id} product={product} variant="list" />
+              ))}
           </div>
 
           {favorites.length > pageSize && (
             <div className="mt-4 flex justify-center border-t border-[var(--border)] py-8">
               <SearchPagination
-                page={page}
-                totalPages={Math.ceil(favorites.length / pageSize)}
+                page={safePage}
+                totalPages={totalPages}
                 totalItems={favorites.length}
                 pageSize={pageSize}
               />

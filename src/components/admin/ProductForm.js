@@ -6,6 +6,49 @@ import CharCount from "./CharCount";
 
 const MAX_IMAGES = 5;
 
+function PendingFilePreview({ file }) {
+  const [previewSrc, setPreviewSrc] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (active) {
+        setPreviewSrc(typeof reader.result === "string" ? reader.result : "");
+      }
+    };
+    reader.readAsDataURL(file);
+
+    return () => {
+      active = false;
+      if (reader.readyState === 1) {
+        reader.abort();
+      }
+    };
+  }, [file]);
+
+  if (!previewSrc) {
+    return (
+      <div className="flex h-32 w-full items-center justify-center bg-slate-900/20 text-[11px] admin-muted">
+        Cargando...
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-32">
+      <Image
+        src={previewSrc}
+        alt={file.name}
+        fill
+        unoptimized
+        className="object-cover"
+        sizes="240px"
+      />
+    </div>
+  );
+}
+
 export default function ProductForm({
   form,
   categories,
@@ -28,21 +71,6 @@ export default function ProductForm({
   const currentCount = pendingImages.length;
   const remaining = Math.max(0, MAX_IMAGES - currentCount);
   const isAtLimit = remaining === 0;
-
-  const previews = useMemo(
-    () =>
-      pendingImages.map((file) => ({
-        file,
-        url: URL.createObjectURL(file),
-      })),
-    [pendingImages]
-  );
-
-  useEffect(() => {
-    return () => {
-      previews.forEach((item) => URL.revokeObjectURL(item.url));
-    };
-  }, [previews]);
 
   const pushFiles = (fileList) => {
     const incoming = Array.from(fileList || []);
@@ -87,6 +115,11 @@ export default function ProductForm({
     setIsDragging(false);
   };
 
+  const handleSubmit = (event) => {
+    setUploadError("");
+    onSubmit?.(event);
+  };
+
   return (
     <article className="soft-card p-4 md:p-5">
       <h2 className="text-base font-bold admin-title">Crear producto</h2>
@@ -94,7 +127,7 @@ export default function ProductForm({
         Guarda el producto base y luego agrega opciones y variantes.
       </p>
 
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
         <div className="admin-input-wrap">
           <input
             name="name"
@@ -227,33 +260,26 @@ export default function ProductForm({
           </p>
           {uploadError ? <p className="admin-message admin-message--error">{uploadError}</p> : null}
         </div>
-        {previews.length ? (
+        {pendingImages.length ? (
           <div className="grid gap-3 sm:grid-cols-2">
-            {previews.map((item, index) => (
+            {pendingImages.map((file, index) => (
               <div
-                key={`${item.file.name}-${item.file.lastModified}-${index}`}
+                key={`${file.name}-${file.lastModified}-${index}`}
                 className="admin-list-item overflow-hidden"
               >
-                <div className="relative h-32">
-                  <Image
-                    src={item.url}
-                    alt={item.file.name}
-                    fill
-                    className="object-cover"
-                    sizes="240px"
-                  />
-                </div>
+                <PendingFilePreview file={file} />
                 <div className="flex items-center justify-between gap-2 p-2">
                   <div className="min-w-0">
-                    <p className="truncate text-[11px] admin-subtitle">{item.file.name}</p>
+                    <p className="truncate text-[11px] admin-subtitle">{file.name}</p>
                     <p className="text-[10px] admin-muted">
-                      {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
+                    disabled={disabled}
                     onClick={() => onRemovePendingImage?.(index)}
                   >
                     Quitar
