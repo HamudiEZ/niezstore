@@ -15,7 +15,6 @@ import {
   validatePasswordStrength,
 } from "../../lib/password-policy";
 import { INPUT_LIMITS } from "../../lib/input-limits";
-import CharCount from "../../components/admin/CharCount";
 import { useAuthStore } from "@/store/authStore";
 
 function getSafeNextPath(rawNext, fallback = "/cuenta") {
@@ -147,8 +146,7 @@ function RegisterFormContent() {
             maxLength={INPUT_LIMITS.userFullName}
             required
           />
-          <CharCount value={fullName} max={INPUT_LIMITS.userFullName} />
-        </div>
+          </div>
 
         <div className="admin-input-wrap">
           <input
@@ -161,8 +159,7 @@ function RegisterFormContent() {
             maxLength={INPUT_LIMITS.userEmail}
             required
           />
-          <CharCount value={email} max={INPUT_LIMITS.userEmail} />
-        </div>
+          </div>
 
         <div className="relative">
           <input

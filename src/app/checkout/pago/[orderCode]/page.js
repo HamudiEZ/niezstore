@@ -10,6 +10,7 @@ import { Copy, UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button, getButtonClass } from "@/components/ui/button";
 import { INPUT_LIMITS } from "@/lib/input-limits";
 import { useMounted } from "@/lib/use-mounted";
+import { BANK_DETAILS } from "@/lib/payment-config";
 
 const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "pdf"]);
 const ALLOWED_MIME_TYPES = new Set([
@@ -275,22 +276,23 @@ export default function PaymentPage({ params }) {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 relative group">
                 <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Banco</p>
-                <p className="text-sm font-bold text-[var(--foreground)] mt-1">Banco Familiar</p>
+                <p className="text-sm font-bold text-[var(--foreground)] mt-1">{BANK_DETAILS.bank || "—"}</p>
               </div>
 
               <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 relative group">
                 <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Titular</p>
-                <p className="text-sm font-bold text-[var(--foreground)] mt-1">Niez Store SRL Comercial</p>
+                <p className="text-sm font-bold text-[var(--foreground)] mt-1">{BANK_DETAILS.holder || "—"}</p>
               </div>
 
               <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 relative group">
                 <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Cuenta Nro</p>
-                <p className="text-sm font-bold text-[var(--foreground)] mt-1" id="account-nro">0123456789</p>
+                <p className="text-sm font-bold text-[var(--foreground)] mt-1" id="account-nro">{BANK_DETAILS.account || "—"}</p>
                 <button
                   type="button"
-                  onClick={() => handleCopy("0123456789", "account")}
+                  onClick={() => handleCopy(BANK_DETAILS.account, "account")}
                   className="absolute top-4 right-4 text-[var(--muted)] hover:text-cyan-500 transition"
                   title="Copiar"
+                  disabled={!BANK_DETAILS.account}
                 >
                   {copied === "account" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 </button>
@@ -298,12 +300,13 @@ export default function PaymentPage({ params }) {
 
               <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 relative group">
                 <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">CI / RUC</p>
-                <p className="text-sm font-bold text-[var(--foreground)] mt-1">80012345-6</p>
+                <p className="text-sm font-bold text-[var(--foreground)] mt-1">{BANK_DETAILS.ruc || "—"}</p>
                 <button
                   type="button"
-                  onClick={() => handleCopy("80012345-6", "ruc")}
+                  onClick={() => handleCopy(BANK_DETAILS.ruc, "ruc")}
                   className="absolute top-4 right-4 text-[var(--muted)] hover:text-cyan-500 transition"
                   title="Copiar"
+                  disabled={!BANK_DETAILS.ruc}
                 >
                   {copied === "ruc" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 </button>
@@ -311,12 +314,13 @@ export default function PaymentPage({ params }) {
 
               <div className="sm:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 relative group">
                 <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Alias</p>
-                <p className="text-sm font-bold text-[var(--foreground)] mt-1">niez.store</p>
+                <p className="text-sm font-bold text-[var(--foreground)] mt-1">{BANK_DETAILS.alias || "—"}</p>
                 <button
                   type="button"
-                  onClick={() => handleCopy("niez.store", "alias")}
+                  onClick={() => handleCopy(BANK_DETAILS.alias, "alias")}
                   className="absolute top-4 right-4 text-[var(--muted)] hover:text-cyan-500 transition"
                   title="Copiar"
+                  disabled={!BANK_DETAILS.alias}
                 >
                   {copied === "alias" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 </button>

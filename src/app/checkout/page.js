@@ -18,7 +18,6 @@ import {
 } from "@/lib/checkout-validation";
 import { INPUT_LIMITS } from "@/lib/input-limits";
 import { MapPin } from "lucide-react";
-import CharCount from "@/components/admin/CharCount";
 
 const formatPrice = (value) =>
   typeof value === "number" && Number.isFinite(value)
@@ -271,7 +270,6 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Nombre completo"
                 />
-                <CharCount value={effectiveFormData.fullName} max={INPUT_LIMITS.checkoutFullName} />
                 <FieldError message={fieldErrors.fullName} />
               </div>
 
@@ -285,7 +283,6 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Correo electronico"
                 />
-                <CharCount value={effectiveFormData.email} max={INPUT_LIMITS.userEmail} />
                 <FieldError message={fieldErrors.email} />
               </div>
 
@@ -300,7 +297,6 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Telefono (opcional). Ej: +595 981 123456"
                 />
-                <CharCount value={effectiveFormData.phone} max={INPUT_LIMITS.checkoutPhone} />
                 <FieldError message={fieldErrors.phone} />
               </div>
             </div>
@@ -317,7 +313,6 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Direccion exacta"
                 />
-                <CharCount value={effectiveFormData.line1} max={INPUT_LIMITS.checkoutLine1} />
                 <FieldError message={fieldErrors.line1} />
               </div>
 
@@ -330,8 +325,7 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Piso, depto o referencia (opcional)"
                 />
-                <CharCount value={effectiveFormData.line2} max={INPUT_LIMITS.checkoutLine2} />
-              </div>
+                </div>
 
               <div>
                 <input
@@ -343,7 +337,6 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Ciudad"
                 />
-                <CharCount value={effectiveFormData.city} max={INPUT_LIMITS.checkoutCity} />
                 <FieldError message={fieldErrors.city} />
               </div>
 
@@ -358,7 +351,6 @@ export default function CheckoutPage() {
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-cyan-400"
                   placeholder="Codigo postal"
                 />
-                <CharCount value={effectiveFormData.postalCode} max={INPUT_LIMITS.checkoutPostalCode} />
                 <FieldError message={fieldErrors.postalCode} />
               </div>
             </div>
