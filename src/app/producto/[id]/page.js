@@ -2,6 +2,22 @@ import { notFound } from "next/navigation";
 import ProductDetailView from "../../../components/ecommerce/ProductDetailView";
 import { getProductById, getRelatedProducts } from "../../../lib/catalog";
 
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }) {
+  const resolvedParams = await params;
+  const product = await getProductById(resolvedParams?.id);
+  if (!product || !product.isActive) {
+    return { title: "Producto no encontrado | Niez Store" };
+  }
+  return {
+    title: `${product.name} | Niez Store`,
+    description:
+      product.description?.slice(0, 155) ||
+      `Compra ${product.name} en Niez Store.`,
+  };
+}
+
 function toSerializableProduct(product) {
   const options = (product.options ?? [])
     .map((option) => ({
@@ -36,6 +52,7 @@ function toSerializableProduct(product) {
 
   return {
     id: product.id,
+    slug: product.slug,
     name: product.name,
     description: product.description ?? "",
     brand: product.brand ?? "",
@@ -72,6 +89,7 @@ export default async function ProductPage({ params }) {
 
   return (
     <ProductDetailView
+      key={serializableProduct.id}
       product={serializableProduct}
       relatedProducts={relatedProducts}
     />

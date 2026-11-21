@@ -1,9 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { normalizeSearchTerm } from "@/lib/input-limits";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(request) {
+  const rl = rateLimit(request, {
+    limit: 60,
+    windowMs: 60 * 1000,
+    keyPrefix: "public-search",
+  });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rl.error },
+      {
+        status: 429,
+        headers: rl.retryAfter ? { "Retry-After": String(rl.retryAfter) } : undefined,
+      }
+    );
+  }
+
   const searchParams = request.nextUrl.searchParams;
-  const q = String(searchParams.get("q") ?? "").trim();
+  const q = normalizeSearchTerm(searchParams.get("q"));
 
   if (!q || q.length < 2) {
     return NextResponse.json({ results: [] });
@@ -19,6 +36,7 @@ export async function GET(request) {
           { brand: { contains: q, mode: "insensitive" } },
         ],
       },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         slug: true,
@@ -36,7 +54,7 @@ export async function GET(request) {
           select: { price: true, compareAtPrice: true, imageUrl: true },
         },
       },
-      take: 5, // Exact limit to 5 products as agreed.
+      take: 5,
     });
 
     const formattedResults = products.map((product) => {

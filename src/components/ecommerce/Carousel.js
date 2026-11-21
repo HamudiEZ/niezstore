@@ -51,13 +51,14 @@ export default function Carousel({ children, scrollCount = 2, className = "" }) 
   }, []);
 
   useEffect(() => {
-    update();
     const el = trackRef.current;
     if (!el) return undefined;
+    const rafId = requestAnimationFrame(update);
     const ro = new ResizeObserver(() => update());
     ro.observe(el);
     window.addEventListener("resize", update);
     return () => {
+      cancelAnimationFrame(rafId);
       ro.disconnect();
       window.removeEventListener("resize", update);
     };

@@ -8,6 +8,8 @@ import SectionCard from "../components/ui/section-card";
 import { getFeaturedProducts, getNewestProducts, getPublicCategories } from "../lib/catalog";
 import { heroDeals, offerBanners } from "../lib/marketing-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [categories, featuredProducts, newestProducts] = await Promise.all([
     getPublicCategories(),

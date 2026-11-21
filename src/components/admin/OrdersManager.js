@@ -5,8 +5,6 @@ import {
   BadgeDollarSign,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Clock3,
   Funnel,
@@ -21,10 +19,17 @@ import {
   ShieldCheck,
   Truck,
   User,
-  Download
+  Download,
 } from "lucide-react";
 import { INPUT_LIMITS } from "@/lib/input-limits";
 import Pagination from "@/components/ui/pagination";
+import {
+  STATUS_LABELS,
+  normalizeOrderStatus,
+  isPendingStatus,
+  getStatusLabel,
+  getAllowedStatusOptions,
+} from "@/lib/order-status";
 
 const STATUS_FILTERS = [
   { value: "all", label: "Todos los estados" },
@@ -36,15 +41,12 @@ const STATUS_FILTERS = [
   { value: "CANCELLED", label: "Cancelado" },
 ];
 
-import {
-  ORDER_STATUS_OPTIONS,
-  STATUS_LABELS,
-  STATUS_TRANSITIONS,
-  normalizeOrderStatus,
-  isPendingStatus,
-  getStatusLabel,
-  getAllowedStatusOptions,
-} from "@/lib/order-status";
+const PAID_ORDER_STATUSES = new Set([
+  "PAID",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+]);
 
 function getStatusClass(status) {
   if (status === "PAID" || status === "DELIVERED") {
@@ -63,22 +65,63 @@ function getStatusClass(status) {
 }
 
 /**
- * Transforms a Cloudinary URL to always serve a flattened JPG version
- * for security (neutralizes PDF scripts/XSS) and compatibility.
+ * Strictly validates that a receipt URL points to HTTPS res.cloudinary.com
+ * and transforms /upload/ to serve a flattened JPG (neutralizes active PDF content).
  */
 const getSafeReceiptUrl = (url) => {
-  if (!url) return "";
-  if (typeof url === "string" && url.includes("cloudinary.com")) {
-    // Inject f_jpg,pg_1 after /upload/
-    return url.replace("/upload/", "/upload/f_jpg,pg_1/");
+  if (typeof url !== "string" || !url.trim()) return "";
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== "https:" || parsed.hostname !== "res.cloudinary.com") {
+      return "";
+    }
+    if (
+      parsed.pathname.includes("/upload/") &&
+      !parsed.pathname.includes("/upload/f_jpg")
+    ) {
+      parsed.pathname = parsed.pathname.replace("/upload/", "/upload/f_jpg,pg_1/");
+    }
+    return parsed.toString();
+  } catch {
+    return "";
   }
-  return url;
 };
+
+function sanitizeCsvCell(value) {
+  const str = String(value ?? "").replace(/[\r\n]+/g, " ");
+  const safeFormula = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+  const escaped = safeFormula.replace(/"/g, '""');
+  return `"${escaped}"`;
+}
+
+function formatOrderItemVariant(item) {
+  const optionsLabel = [...(item?.variant?.variantOptions || [])]
+    .sort(
+      (a, b) =>
+        (a.optionValue?.option?.position ?? 0) -
+        (b.optionValue?.option?.position ?? 0)
+    )
+    .map((vo) =>
+      vo.optionValue?.option?.name && vo.optionValue?.value
+        ? `${vo.optionValue.option.name}: ${vo.optionValue.value}`
+        : null
+    )
+    .filter(Boolean)
+    .join(" | ");
+  const sku = item?.variant?.sku ? `SKU: ${item.variant.sku}` : "";
+  return [optionsLabel, sku].filter(Boolean).join(" · ");
+}
 
 export default function OrdersManager({ initialSearch = "", onClearInitialSearch }) {
   const [orders, setOrders] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+    totalAll: 0,
+  });
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -88,67 +131,84 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
   const [statusMessageTone, setStatusMessageTone] = useState("info");
   const [expandedOrderId, setExpandedOrderId] = useState("");
 
-  const fetchOrders = useCallback(async (page = 1, options = {}) => {
-    const { silent = false } = options;
-    if (!silent) {
-      setLoading(true);
-    }
-    setError("");
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: "10",
-      });
-      const normalizedSearch = searchTerm.trim();
-      if (normalizedSearch) {
-        params.set("search", normalizedSearch);
-      }
-      if (statusFilter !== "all") {
-        params.set("status", statusFilter);
-      }
-
-      const res = await fetch(`/api/admin/orders?${params.toString()}`);
-      const data = await res.json();
-      if (res.ok) {
-        const nextOrders = data.orders || [];
-        setOrders(nextOrders);
-        setStatusDrafts(() => {
-          const nextDrafts = {};
-          for (const order of nextOrders) {
-            const normalizedStatus = normalizeOrderStatus(order.status);
-            nextDrafts[order.id] = normalizedStatus;
-          }
-          return nextDrafts;
-        });
-        setPagination(data.pagination || { page: 1, totalPages: 1, total: 0 });
-        setError("");
-      } else {
-        setError(data.error || "Error al cargar pedidos");
-      }
-    } catch {
-      setError("Error de red al cargar pedidos");
-    } finally {
+  const fetchOrders = useCallback(
+    async (page = 1, options = {}) => {
+      const { silent = false } = options;
       if (!silent) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  }, [searchTerm, statusFilter]);
+      setError("");
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: "10",
+        });
+        const normalizedSearch = searchTerm.trim();
+        if (normalizedSearch) {
+          params.set("search", normalizedSearch);
+        }
+        if (statusFilter !== "all") {
+          params.set("status", statusFilter);
+        }
+
+        const res = await fetch(`/api/admin/orders?${params.toString()}`);
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          const nextOrders = data.orders || [];
+          setOrders(nextOrders);
+          setStatusDrafts(() => {
+            const nextDrafts = {};
+            for (const order of nextOrders) {
+              nextDrafts[order.id] = normalizeOrderStatus(order.status);
+            }
+            return nextDrafts;
+          });
+          setPagination(
+            data.pagination || { page: 1, totalPages: 1, total: 0, totalAll: 0 }
+          );
+          setError("");
+        } else {
+          setError(data.error || "Error al cargar pedidos");
+        }
+      } catch {
+        setError("Error de red al cargar pedidos");
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [searchTerm, statusFilter]
+  );
 
   const exportToCSV = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setStatusMessage("");
+
     try {
       const params = new URLSearchParams({
         page: "1",
-        pageSize: "1000", // Fetch up to 1000 records for export
+        pageSize: "1000",
+        export: "1",
       });
       const normalizedSearch = searchTerm.trim();
       if (normalizedSearch) params.set("search", normalizedSearch);
       if (statusFilter !== "all") params.set("status", statusFilter);
 
       const res = await fetch(`/api/admin/orders?${params.toString()}`);
-      const data = await res.json();
-      if (!res.ok || !data.orders) throw new Error("No se pudo exportar.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !Array.isArray(data.orders)) {
+        throw new Error(data.error || "No se pudo exportar.");
+      }
 
-      const exportData = data.orders.map(order => ({
+      if (data.orders.length === 0) {
+        setStatusMessage("No hay ordenes para exportar con los filtros actuales.");
+        setStatusMessageTone("info");
+        return;
+      }
+
+      const exportData = data.orders.map((order) => ({
         ID: order.orderCode,
         Fecha: new Date(order.createdAt).toLocaleDateString("es-PY"),
         Cliente: order.customerName,
@@ -156,33 +216,44 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
         Telefono: order.customerPhone || "N/A",
         Estado: STATUS_LABELS[order.status] || order.status,
         Metodo: order.payments?.[0]?.provider || "N/A",
-        Monto_Total: Number(order.totalAmount).toFixed(2)
+        Monto_Total: Number(order.totalAmount).toFixed(2),
       }));
 
-      const headers = Object.keys(exportData[0] || {}).join(";");
-      const rows = exportData.map(obj => Object.values(obj).map(v => `"${v}"`).join(";"));
+      const headers = Object.keys(exportData[0]).map(sanitizeCsvCell).join(";");
+      const rows = exportData.map((obj) =>
+        Object.values(obj).map(sanitizeCsvCell).join(";")
+      );
       const csvContent = [headers, ...rows].join("\n");
 
-      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" }); // \uFEFF is BOM for Excel UTF-8 support
+      const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `Ventas_NiezStore_${new Date().toISOString().split("T")[0]}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
+
+      setStatusMessage(`Exportadas ${exportData.length} ordenes a CSV.`);
+      setStatusMessageTone("success");
     } catch (e) {
-        alert("Error al exportar a CSV: " + e.message);
+      setStatusMessage("Error al exportar a CSV: " + e.message);
+      setStatusMessageTone("error");
+    } finally {
+      setExporting(false);
     }
   };
 
   useEffect(() => {
     fetchOrders(1);
-    
-    // Clear the context so that if the user navigates away and back, it resets
-    // We only want to auto-filter immediately after clicking "Ver" from the dashboard
-    if (initialSearch && typeof onClearInitialSearch === 'function') {
-      // Small timeout to ensure state is set before clearing parent
-      setTimeout(() => onClearInitialSearch(), 500);
+
+    let timerId;
+    if (initialSearch && typeof onClearInitialSearch === "function") {
+      timerId = setTimeout(() => onClearInitialSearch(), 500);
     }
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
   }, [fetchOrders, initialSearch, onClearInitialSearch]);
 
   const formatPrice = (v) => Number(v || 0).toFixed(2);
@@ -217,7 +288,7 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         if (res.status === 409 && data?.allowedTransitions?.length) {
@@ -254,16 +325,19 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
     }
   };
 
-  const filteredOrders = orders;
-
   const summary = useMemo(() => {
-    const totalRevenue = filteredOrders.reduce(
+    const paidList = orders.filter((order) =>
+      PAID_ORDER_STATUSES.has(normalizeOrderStatus(order.status))
+    );
+    const totalRevenue = paidList.reduce(
       (acc, order) => acc + Number(order.totalAmount || 0),
       0
     );
-    const paidOrders = filteredOrders.filter((order) => order.status === "PAID").length;
-    const pendingOrders = filteredOrders.filter((order) => isPendingStatus(order.status)).length;
-    const soldUnits = filteredOrders.reduce((total, order) => {
+    const paidOrders = paidList.length;
+    const pendingOrders = orders.filter((order) =>
+      isPendingStatus(order.status)
+    ).length;
+    const soldUnits = paidList.reduce((total, order) => {
       const orderUnits = (order.items || []).reduce(
         (itemsTotal, item) => itemsTotal + Number(item.quantity || 0),
         0
@@ -273,26 +347,26 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
 
     return {
       totalRevenue,
-      averageTicket: filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0,
+      averageTicket: paidOrders > 0 ? totalRevenue / paidOrders : 0,
       paidOrders,
       pendingOrders,
       soldUnits,
     };
-  }, [filteredOrders]);
+  }, [orders]);
 
   const metricCards = [
     {
       id: "revenue",
-      title: "Ingreso visible",
+      title: "Ingreso cobrado (vista)",
       value: `$${formatPrice(summary.totalRevenue)}`,
-      hint: `Ticket medio: $${formatPrice(summary.averageTicket)}`,
+      hint: `Ticket medio pagado: $${formatPrice(summary.averageTicket)}`,
       icon: BadgeDollarSign,
     },
     {
       id: "paid",
       title: "Ordenes pagadas",
       value: String(summary.paidOrders),
-      hint: "Cobro confirmado",
+      hint: "Cobro confirmado (en pagina)",
       icon: CheckCircle2,
     },
     {
@@ -304,9 +378,9 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
     },
     {
       id: "units",
-      title: "Unidades vendidas",
+      title: "Unidades pagadas",
       value: String(summary.soldUnits),
-      hint: "Productos incluidos",
+      hint: "De ordenes confirmadas",
       icon: Package,
     },
   ];
@@ -321,11 +395,21 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
 
   if (error) {
     return (
-      <div className="admin-alert-error text-center">
+      <div className="admin-alert-error text-center space-y-3">
         <p className="text-sm">{error}</p>
+        <button
+          type="button"
+          onClick={() => fetchOrders(pagination.page || 1)}
+          className="inline-flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--admin-text)]"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Reintentar
+        </button>
       </div>
     );
   }
+
+  const totalAllOrders = pagination.totalAll ?? 0;
 
   return (
     <div className="space-y-5">
@@ -394,7 +478,7 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
               }
               maxLength={INPUT_LIMITS.search}
               className="admin-input !pl-10"
-              placeholder="Buscar por codigo, cliente o correo..."
+              placeholder="Buscar por codigo, cliente, correo o telefono..."
               aria-label="Buscar pedidos"
             />
           </label>
@@ -417,11 +501,14 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
             </select>
 
             <button
+              type="button"
               onClick={exportToCSV}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-2 h-[38px] text-xs font-semibold text-[var(--admin-text-muted)] transition-colors hover:border-[var(--admin-border-strong)] hover:text-[var(--admin-text)] whitespace-nowrap"
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-2 h-[38px] text-xs font-semibold text-[var(--admin-text-muted)] transition-colors hover:border-[var(--admin-border-strong)] hover:text-[var(--admin-text)] whitespace-nowrap disabled:opacity-50"
               title="Exportar a Excel (CSV)"
             >
-              <Download className="h-4 w-4" /> Exportar
+              <Download className="h-4 w-4" />
+              {exporting ? "Exportando..." : "Exportar"}
             </button>
           </div>
         </div>
@@ -440,7 +527,7 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
         )}
       </section>
 
-      {orders.length === 0 ? (
+      {totalAllOrders === 0 && orders.length === 0 ? (
         <div className="admin-empty p-12 text-center">
           <Package className="mx-auto mb-4 h-12 w-12 text-[var(--admin-text-soft)]" />
           <p className="text-sm font-semibold text-[var(--admin-text-muted)]">
@@ -450,7 +537,7 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
             Cuando llegue la primera orden aparecera aqui automaticamente.
           </p>
         </div>
-      ) : filteredOrders.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="admin-empty p-10 text-center">
           <p className="text-sm font-semibold text-[var(--admin-text-muted)]">
             No hay resultados para los filtros seleccionados.
@@ -461,7 +548,7 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
         </div>
       ) : (
         <div className="grid gap-3">
-          {filteredOrders.map((order) => {
+          {orders.map((order) => {
             const orderItems = order.items || [];
             const visibleItems = orderItems.slice(0, 4);
             const hiddenItems = Math.max(0, orderItems.length - visibleItems.length);
@@ -471,6 +558,10 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
             );
             const isExpanded = expandedOrderId === order.id;
             const statusOptions = getAllowedStatusOptions(order.status);
+
+            const latestValidReceipt = (order.payments || [])
+              .map((p) => getSafeReceiptUrl(p.receiptUrl))
+              .find(Boolean);
 
             return (
               <article
@@ -554,16 +645,22 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {visibleItems.map((item, index) => (
-                    <span
-                      key={`${item.id || item.productId || "item"}-${index}`}
-                      className="inline-flex items-center rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--admin-text-muted)] max-w-full overflow-hidden"
-                      title={item.product?.name}
-                    >
-                      <span className="flex-shrink-0 mr-1">{item.quantity}x</span>
-                      <span className="truncate">{item.product?.name || "Producto"}</span>
-                    </span>
-                  ))}
+                  {visibleItems.map((item, index) => {
+                    const variantLabel = formatOrderItemVariant(item);
+                    const pillLabel = variantLabel
+                      ? `${item.product?.name || "Producto"} (${variantLabel})`
+                      : item.product?.name || "Producto";
+                    return (
+                      <span
+                        key={`${item.id || item.productId || "item"}-${index}`}
+                        className="inline-flex items-center rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--admin-text-muted)] max-w-full overflow-hidden"
+                        title={pillLabel}
+                      >
+                        <span className="flex-shrink-0 mr-1">{item.quantity}x</span>
+                        <span className="truncate">{pillLabel}</span>
+                      </span>
+                    );
+                  })}
                   {hiddenItems > 0 && (
                     <span className="rounded-full border border-dashed border-[var(--admin-border-strong)] px-2.5 py-1 text-[10px] font-semibold text-[var(--admin-text-soft)]">
                       +{hiddenItems} mas
@@ -609,9 +706,9 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                       "Guardar estado"
                     )}
                   </button>
-                  {order.payments?.some((p) => p.receiptUrl) && (
+                  {latestValidReceipt ? (
                     <a
-                      href={getSafeReceiptUrl(order.payments.find((p) => p.receiptUrl).receiptUrl)}
+                      href={latestValidReceipt}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-auto inline-flex h-9 items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 text-xs font-semibold text-cyan-400 transition-colors hover:border-cyan-500/50 hover:bg-cyan-500/20"
@@ -619,7 +716,11 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                       <Receipt className="h-3.5 w-3.5" />
                       Ver comprobante
                     </a>
-                  )}
+                  ) : order.payments?.some((p) => p.receiptUrl) ? (
+                    <span className="ml-auto text-xs font-semibold text-rose-400">
+                      Comprobante bloqueado (URL no valida)
+                    </span>
+                  ) : null}
                 </div>
 
                 {isExpanded && (
@@ -629,25 +730,38 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                         Productos del pedido
                       </p>
                       <div className="mt-2 space-y-2">
-                        {orderItems.map((item, index) => (
-                          <div
-                            key={`${item.id || item.productId || "detail"}-${index}`}
-                            className="grid gap-1 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-soft)] p-2 text-xs sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center overflow-hidden w-full min-w-0"
-                          >
-                            <p className="font-semibold text-[var(--admin-text)] overflow-hidden text-ellipsis whitespace-nowrap pr-2" title={item.product?.name}>
-                              {item.product?.name || "Producto"}
-                            </p>
-                            <p className="text-[var(--admin-text-muted)]">
-                              Cant: {Number(item.quantity || 0)}
-                            </p>
-                            <p className="text-[var(--admin-text-muted)]">
-                              Unit: ${formatPrice(item.unitPrice)}
-                            </p>
-                            <p className="font-semibold text-[var(--admin-text)]">
-                              Subtotal: ${formatPrice(item.lineTotal)}
-                            </p>
-                          </div>
-                        ))}
+                        {orderItems.map((item, index) => {
+                          const variantLabel = formatOrderItemVariant(item);
+                          return (
+                            <div
+                              key={`${item.id || item.productId || "detail"}-${index}`}
+                              className="grid gap-1 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-soft)] p-2 text-xs sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center overflow-hidden w-full min-w-0"
+                            >
+                              <div className="min-w-0 pr-2">
+                                <p
+                                  className="font-semibold text-[var(--admin-text)] overflow-hidden text-ellipsis whitespace-nowrap"
+                                  title={item.product?.name}
+                                >
+                                  {item.product?.name || "Producto"}
+                                </p>
+                                {variantLabel ? (
+                                  <p className="text-[11px] text-[var(--admin-text-soft)] truncate">
+                                    {variantLabel}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <p className="text-[var(--admin-text-muted)]">
+                                Cant: {Number(item.quantity || 0)}
+                              </p>
+                              <p className="text-[var(--admin-text-muted)]">
+                                Unit: ${formatPrice(item.unitPrice)}
+                              </p>
+                              <p className="font-semibold text-[var(--admin-text)]">
+                                Subtotal: ${formatPrice(item.lineTotal)}
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </section>
 
@@ -658,10 +772,17 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
                           Envio
                         </p>
                         <div className="mt-2 space-y-1 text-xs text-[var(--admin-text-muted)]">
-                          <p className="font-semibold text-[var(--admin-text)] break-all line-clamp-2" title={order.shippingLine1}>
+                          <p
+                            className="font-semibold text-[var(--admin-text)] break-all line-clamp-2"
+                            title={order.shippingLine1}
+                          >
                             {order.shippingLine1 || "Sin direccion"}
                           </p>
-                          {order.shippingLine2 ? <p className="break-all line-clamp-2" title={order.shippingLine2}>{order.shippingLine2}</p> : null}
+                          {order.shippingLine2 ? (
+                            <p className="break-all line-clamp-2" title={order.shippingLine2}>
+                              {order.shippingLine2}
+                            </p>
+                          ) : null}
                           <p className="flex items-start gap-1.5 w-full overflow-hidden">
                             <MapPin className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                             <span className="break-all">
@@ -739,14 +860,16 @@ export default function OrdersManager({ initialSearch = "", onClearInitialSearch
         </div>
       )}
 
-      <Pagination
-        page={pagination.page}
-        totalPages={pagination.totalPages || 1}
-        totalItems={pagination.totalAll || pagination.total || orders.length}
-        pageSize={pagination.pageSize || 10}
-        onPageChange={fetchOrders}
-        className="mt-6"
-      />
+      {orders.length > 0 && (
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages || 1}
+          totalItems={pagination.total ?? orders.length}
+          pageSize={pagination.pageSize || 10}
+          onPageChange={fetchOrders}
+          className="mt-6"
+        />
+      )}
     </div>
   );
 }

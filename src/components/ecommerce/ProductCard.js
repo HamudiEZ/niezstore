@@ -7,7 +7,7 @@ import Link from "next/link";
 import RatingStars from "./RatingStars";
 import { useFavoritesStore } from "@/store/favoritesStore";
 import { useAuthStore } from "@/store/authStore";
-import { useState, useEffect } from "react";
+import { useMounted } from "@/lib/use-mounted";
 
 export default function ProductCard({ product, variant = "grid" }) {
   const isRail = variant === "rail";
@@ -25,11 +25,7 @@ export default function ProductCard({ product, variant = "grid" }) {
 
   const { isFavorite, toggleFavorite } = useFavoritesStore();
   const { isAuthenticated } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
 
   const isFav = mounted ? isFavorite(product.id) : false;
 
@@ -98,7 +94,7 @@ export default function ProductCard({ product, variant = "grid" }) {
             onClick={handleFavoriteClick}
             className={clsx(
               "absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition",
-              isFav 
+              isFav
                 ? "bg-rose-50 text-rose-500 hover:bg-rose-100 dark:bg-rose-500/20 dark:text-rose-400"
                 : "bg-[var(--background)]/85 text-[var(--muted)] hover:text-rose-400"
             )}
@@ -123,9 +119,9 @@ export default function ProductCard({ product, variant = "grid" }) {
         >
           {product.name}
         </p>
-        
+
         {isList && (
-            <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate">{product.brand || "Niez Store"}</p>
+          <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate">{product.brand || "Niez Store"}</p>
         )}
 
         {hasRating && !isList ? (
@@ -147,7 +143,7 @@ export default function ProductCard({ product, variant = "grid" }) {
               </div>
               <p className="mt-1 text-xs text-emerald-300">Envío rápido disponible</p>
             </div>
-            
+
             <div className="flex shrink-0">
               <span className="rounded-xl bg-[var(--accent)] px-6 py-2.5 text-sm font-bold text-[var(--background)] transition hover:opacity-90 w-full text-center sm:w-auto pointer-events-none">
                 Ver detalle

@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ProductForm from "./ProductForm";
 import ProductsList from "./ProductsList";
 import ProductOptions from "./ProductOptions";
 import ProductVariants from "./ProductVariants";
 import ProductEditForm from "./ProductEditForm";
 import AdminSectionCard from "./AdminSectionCard";
-import { normalizeSearchTerm } from "@/lib/input-limits";
+import { INPUT_LIMITS, normalizeSearchTerm } from "@/lib/input-limits";
 import { fetchJson } from "@/lib/admin-fetch";
 
 const EMPTY_PRODUCT_FORM = {
@@ -56,7 +56,7 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
     ...EMPTY_PAGINATION,
     pageSize: PRODUCT_PAGE_SIZE,
   });
-  
+
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -84,6 +84,8 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
   const [pendingImages, setPendingImages] = useState([]);
   const [productsPage, setProductsPage] = useState(1);
 
+  const detailRequestRef = useRef(0);
+
   const refreshCategoryOptions = useCallback(async () => {
     const data = await fetchJson("/api/admin/categories?scope=all");
     const nextOptions = data.categories ?? [];
@@ -94,7 +96,7 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
   const refreshProductsPage = useCallback(
     async (overrides = {}) => {
       const page = overrides.page ?? productsPage;
-      const search = String(overrides.search ?? searchTerm).trim();
+      const search = normalizeSearchTerm(overrides.search ?? searchTerm);
       const categoryId = String(overrides.categoryId ?? categoryFilter).trim();
       const status = String(overrides.status ?? statusFilter).trim();
       const params = new URLSearchParams({
@@ -120,7 +122,7 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
 
       setProducts(nextProducts);
       setProductsMeta(nextMeta);
-      
+
       if (nextPage !== productsPage) {
         setProductsPage(nextPage);
       }
@@ -131,10 +133,14 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
   );
 
   const loadProductDetail = useCallback(async (productId) => {
+    if (!productId) return;
+    const reqId = ++detailRequestRef.current;
     try {
       const productData = await fetchJson(`/api/admin/products/${productId}`);
+      if (reqId !== detailRequestRef.current) return;
       setSelectedProduct(productData.product ?? null);
     } catch (err) {
+      if (reqId !== detailRequestRef.current) return;
       setError(err.message);
     }
   }, []);
@@ -168,6 +174,8 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
   // Handle external product selection (e.g. from Dashboard)
   useEffect(() => {
     if (externalProductId && externalProductId !== selectedProductId) {
+      setSelectedProduct(null);
+      setEditProductMessage("");
       setSelectedProductId(externalProductId);
       if (onClearExternalProductId) onClearExternalProductId();
     }
@@ -192,11 +200,15 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
 
   useEffect(() => {
     if (!selectedProductId) {
+      detailRequestRef.current += 1;
       setSelectedProduct(null);
+      setEditProductMessage("");
       setOptionSelections({});
       setEditProductForm(EMPTY_PRODUCT_FORM);
       return;
     }
+    setSelectedProduct(null);
+    setEditProductMessage("");
     setOptionSelections({});
     setImageMessage("");
     setOptionMessage("");
@@ -236,6 +248,21 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
     setVariantEditForm(mapVariantToForm(variant));
   }, [selectedProduct, variantEditId]);
 
+  const handleRetryProducts = async () => {
+    setError("");
+    setLoadingProducts(true);
+    try {
+      await refreshProductsPage();
+      if (selectedProductId) {
+        await loadProductDetail(selectedProductId);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
   const handleProductChange = (event) => {
     const { name, value, type, checked } = event.target;
     setProductForm((current) => ({
@@ -274,7 +301,7 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
   };
 
   const handleProductSearchChange = (value) => {
-    setSearchTerm(normalizeSearchTerm(value));
+    setSearchTerm(String(value ?? "").slice(0, INPUT_LIMITS.search));
     setProductsPage(1);
   };
 
@@ -287,6 +314,49 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
     setStatusFilter(value);
     setProductsPage(1);
   };
+
+  const uploadFilesToCloudinary = useCallback(async (files) => {
+    if (!files || files.length === 0) return [];
+    const signature = await fetchJson("/api/uploads/cloudinary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folder: "niezstore" }),
+    });
+    const uploads = await Promise.all(
+      files.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("api_key", signature.apiKey);
+        formData.append("timestamp", signature.timestamp);
+        formData.append("signature", signature.signature);
+        formData.append("folder", signature.folder);
+        formData.append("allowed_formats", signature.allowedFormats);
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`,
+          { method: "POST", body: formData }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.error?.message || "Error subiendo imagen.");
+        }
+        return data.secure_url;
+      })
+    );
+    return uploads;
+  }, []);
+
+  const uploadImagesForProduct = useCallback(
+    async (productId, files) => {
+      const urls = await uploadFilesToCloudinary(files);
+      if (urls.length === 0) return;
+      await fetchJson(`/api/admin/products/${productId}/images`, {
+        method: "POST",
+        body: JSON.stringify({ urls }),
+      });
+    },
+    [uploadFilesToCloudinary]
+  );
 
   const handleCreateProduct = async (event) => {
     event.preventDefault();
@@ -310,13 +380,21 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
         ...EMPTY_PRODUCT_FORM,
         categoryId: current.categoryId || data.product.categoryId,
       }));
+
+      let uploadWarning = "";
       if (pendingImages.length > 0) {
-        await uploadImagesForProduct(data.product.id, pendingImages);
-        setPendingImages([]);
+        try {
+          await uploadImagesForProduct(data.product.id, pendingImages);
+          setPendingImages([]);
+        } catch (uploadErr) {
+          uploadWarning = `Producto creado, pero falló la carga de algunas imágenes: ${uploadErr.message}`;
+        }
       }
+
       await refreshProductsPage();
       setSelectedProductId(data.product.id);
-      setProductMessage("Producto creado.");
+      await loadProductDetail(data.product.id);
+      setProductMessage(uploadWarning || "Producto creado.");
     } catch (err) {
       setProductMessage(err.message);
     } finally {
@@ -386,6 +464,10 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
 
   const handleSelectProduct = (productId) => {
     if (!productId) return;
+    if (productId !== selectedProductId) {
+      setSelectedProduct(null);
+      setEditProductMessage("");
+    }
     setSelectedProductId(productId);
   };
 
@@ -467,6 +549,12 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
         `/api/admin/products/${selectedProductId}/options/${optionId}`,
         { method: "DELETE" }
       );
+      setOptionSelections((current) => {
+        if (!(optionId in current)) return current;
+        const next = { ...current };
+        delete next[optionId];
+        return next;
+      });
       await loadProductDetail(selectedProductId);
       setOptionMessage("Opcion eliminada.");
     } catch (err) {
@@ -528,6 +616,12 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
         `/api/admin/products/${selectedProductId}/options/${optionId}/values/${valueId}`,
         { method: "DELETE" }
       );
+      setOptionSelections((current) => {
+        if (current[optionId] !== valueId) return current;
+        const next = { ...current };
+        delete next[optionId];
+        return next;
+      });
       await loadProductDetail(selectedProductId);
       setOptionMessage("Valor eliminado.");
     } catch (err) {
@@ -540,45 +634,6 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
   const handleVariantSelection = (optionId, valueId) => {
     setOptionSelections((current) => ({ ...current, [optionId]: valueId }));
   };
-
-  const uploadFilesToCloudinary = useCallback(async (files) => {
-    if (!files || files.length === 0) return [];
-    const signature = await fetchJson("/api/uploads/cloudinary", { method: "POST" });
-    const uploads = await Promise.all(
-      files.map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("api_key", signature.apiKey);
-        formData.append("timestamp", signature.timestamp);
-        formData.append("signature", signature.signature);
-        formData.append("folder", signature.folder);
-        formData.append("allowed_formats", signature.allowedFormats);
-
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`,
-          { method: "POST", body: formData }
-        );
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data?.error?.message || "Error subiendo imagen.");
-        }
-        return data.secure_url;
-      })
-    );
-    return uploads;
-  }, []);
-
-  const uploadImagesForProduct = useCallback(
-    async (productId, files) => {
-      const urls = await uploadFilesToCloudinary(files);
-      if (urls.length === 0) return;
-      await fetchJson(`/api/admin/products/${productId}/images`, {
-        method: "POST",
-        body: JSON.stringify({ urls }),
-      });
-    },
-    [uploadFilesToCloudinary]
-  );
 
   const handleUploadImages = async (fileList) => {
     if (!selectedProductId || !fileList || fileList.length === 0) return;
@@ -646,23 +701,23 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
     }
 
     const price = Number(variantForm.price);
-    const stock = Number(variantForm.stock);
-    const compareAtPrice =
-      variantForm.compareAtPrice === "" ? null : Number(variantForm.compareAtPrice);
-    
-    if (!Number.isFinite(price) || price <= 0) {
-      setVariantMessage("Precio invalido.");
-      return;
-    }
-    const finalCompareAtPrice = 
-      (compareAtPrice != null && compareAtPrice > price) ? compareAtPrice : null;
+    const stockRaw = String(variantForm.stock ?? "").trim();
+    const stock = Number(stockRaw);
+    const compareAtRaw = String(variantForm.compareAtPrice ?? "").trim();
+    const compareAtPrice = compareAtRaw === "" ? null : Number(compareAtRaw);
 
-    if (compareAtPrice != null && !Number.isFinite(compareAtPrice)) {
-      setVariantMessage("Precio comparativo invalido.");
+    if (!Number.isFinite(price) || price <= 0) {
+      setVariantMessage("Precio inválido (debe ser mayor a 0).");
       return;
     }
-    if (!Number.isFinite(stock) || stock < 0) {
-      setVariantMessage("Stock invalido.");
+    if (compareAtPrice != null) {
+      if (!Number.isFinite(compareAtPrice) || compareAtPrice <= price) {
+        setVariantMessage("El precio anterior debe ser mayor al precio actual.");
+        return;
+      }
+    }
+    if (stockRaw === "" || !Number.isInteger(stock) || stock < 0) {
+      setVariantMessage("Stock inválido (debe ser un entero mayor o igual a 0).");
       return;
     }
 
@@ -682,7 +737,7 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
       const payload = {
         sku: variantForm.sku.trim(),
         price,
-        compareAtPrice: finalCompareAtPrice,
+        compareAtPrice,
         stock,
         imageUrl: variantForm.imageUrl.trim(),
         isActive: variantForm.isActive,
@@ -743,23 +798,23 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
     }
 
     const price = Number(variantEditForm.price);
-    const stock = Number(variantEditForm.stock);
-    const compareAtPrice =
-      variantEditForm.compareAtPrice === "" ? null : Number(variantEditForm.compareAtPrice);
+    const stockRaw = String(variantEditForm.stock ?? "").trim();
+    const stock = Number(stockRaw);
+    const compareAtRaw = String(variantEditForm.compareAtPrice ?? "").trim();
+    const compareAtPrice = compareAtRaw === "" ? null : Number(compareAtRaw);
 
     if (!Number.isFinite(price) || price <= 0) {
-      setVariantEditMessage("Precio invalido.");
+      setVariantEditMessage("Precio inválido (debe ser mayor a 0).");
       return;
     }
-    const finalCompareAtPrice = 
-      (compareAtPrice != null && compareAtPrice > price) ? compareAtPrice : null;
-
-    if (compareAtPrice != null && !Number.isFinite(compareAtPrice)) {
-      setVariantEditMessage("Precio comparativo invalido.");
-      return;
+    if (compareAtPrice != null) {
+      if (!Number.isFinite(compareAtPrice) || compareAtPrice <= price) {
+        setVariantEditMessage("El precio anterior debe ser mayor al precio actual.");
+        return;
+      }
     }
-    if (!Number.isFinite(stock) || stock < 0) {
-      setVariantEditMessage("Stock invalido.");
+    if (stockRaw === "" || !Number.isInteger(stock) || stock < 0) {
+      setVariantEditMessage("Stock inválido (debe ser un entero mayor o igual a 0).");
       return;
     }
 
@@ -769,7 +824,7 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
       const payload = {
         sku: variantEditForm.sku.trim(),
         price,
-        compareAtPrice: finalCompareAtPrice,
+        compareAtPrice,
         stock,
         imageUrl: variantEditForm.imageUrl.trim(),
         isActive: variantEditForm.isActive,
@@ -790,15 +845,51 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
     }
   };
 
-  const imageBusy = busyAction === "images" || busyAction.startsWith("image-");
+  const handleDeleteVariant = async (variantId) => {
+    if (!selectedProductId || !variantId) return;
+    if (!window.confirm("¿Eliminar esta variante?")) return;
 
-  if (error) {
-    // If there's an error outside the normal operation context
-    console.error("ProductsManager error:", error);
-  }
+    setVariantMessage("");
+    setVariantEditMessage("");
+    setBusyAction(`variant-delete-${variantId}`);
+    try {
+      await fetchJson(
+        `/api/admin/products/${selectedProductId}/variants/${variantId}`,
+        { method: "DELETE" }
+      );
+      if (variantEditId === variantId) {
+        setVariantEditId(null);
+        setVariantEditForm(EMPTY_VARIANT_FORM);
+      }
+      await loadProductDetail(selectedProductId);
+      await refreshProductsPage();
+      setVariantMessage("Variante eliminada.");
+    } catch (err) {
+      setVariantMessage(err.message);
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const imageBusy = busyAction === "images" || busyAction.startsWith("image-");
+  const activeProduct =
+    selectedProduct && selectedProduct.id === selectedProductId ? selectedProduct : null;
 
   return (
     <>
+      {error ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-500 dark:text-rose-300">
+          <span className="font-semibold">Error: {error}</span>
+          <button
+            type="button"
+            onClick={handleRetryProducts}
+            className="variant-action-btn variant-action-btn--edit"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] mb-8">
         <ProductForm
           form={productForm}
@@ -840,31 +931,36 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
         title="Opciones y variantes"
         description="Selecciona un producto para gestionar detalles, imagenes y stock por variante."
       >
-        {!selectedProduct ? (
+        {!activeProduct ? (
           <div className="admin-empty">
-            <p className="text-sm admin-title">No hay producto seleccionado.</p>
+            <p className="text-sm admin-title">
+              {selectedProductId ? "Cargando detalle del producto..." : "No hay producto seleccionado."}
+            </p>
             <p className="mt-1 text-xs admin-muted">
-              Usa la lista de productos para abrir uno y editar sus variantes.
+              {selectedProductId
+                ? "Obteniendo opciones, imagenes y variantes."
+                : "Usa la lista de productos para abrir uno y editar sus variantes."}
             </p>
           </div>
         ) : (
           <div className="space-y-5 min-w-0 flex-1 w-full max-w-full overflow-hidden">
             <div className="admin-list-item p-3 min-w-0 text-left">
-              <p className="text-sm font-semibold admin-title truncate max-w-full" title={selectedProduct.name}>
-                {selectedProduct.name}
+              <p className="text-sm font-semibold admin-title truncate max-w-full" title={activeProduct.name}>
+                {activeProduct.name}
               </p>
-              <p className="text-xs admin-muted truncate max-w-full" title={selectedProduct.brand}>
-                {selectedProduct.brand || "Sin marca"} -{" "}
-                {selectedProduct.category?.name || "Sin categoria"}
+              <p className="text-xs admin-muted truncate max-w-full" title={activeProduct.brand}>
+                {activeProduct.brand || "Sin marca"} -{" "}
+                {activeProduct.category?.name || "Sin categoria"}
               </p>
             </div>
 
             <ProductEditForm
+              key={`edit-${activeProduct.id}`}
               form={editProductForm}
               categories={categoryOptions}
               message={editProductMessage}
               disabled={busyAction === "product-edit"}
-              images={selectedProduct.images || []}
+              images={activeProduct.images || []}
               imageMessage={imageMessage}
               imageDisabled={imageBusy}
               onUploadImages={handleUploadImages}
@@ -875,7 +971,8 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
             />
 
             <ProductOptions
-              selectedProduct={selectedProduct}
+              key={`options-${activeProduct.id}`}
+              selectedProduct={activeProduct}
               form={optionForm}
               message={optionMessage}
               disabled={busyAction === "option"}
@@ -890,7 +987,8 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
             />
 
             <ProductVariants
-              selectedProduct={selectedProduct}
+              key={`variants-${activeProduct.id}`}
+              selectedProduct={activeProduct}
               form={variantForm}
               optionSelections={optionSelections}
               message={variantMessage}
@@ -899,6 +997,7 @@ export default function ProductsManager({ externalProductId, onClearExternalProd
               onSelectOptionValue={handleVariantSelection}
               onSubmit={handleCreateVariant}
               onToggleStatus={handleToggleVariant}
+              onDeleteVariant={handleDeleteVariant}
               editVariantId={variantEditId}
               editForm={variantEditForm}
               editMessage={variantEditMessage}

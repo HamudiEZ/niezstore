@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/auth";
+import { parseJsonBody, verifySameOrigin } from "@/lib/api-security";
+
+const MAX_FAVORITE_IDS = 100;
 
 function getDiscountPercentage(compareAtPrice, price) {
   if (
@@ -15,45 +18,52 @@ function getDiscountPercentage(compareAtPrice, price) {
   return Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
 }
 
-import { getCurrentUser } from "@/lib/auth";
-
-export async function GET(request) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = user.id;
-
+export async function GET() {
   try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = user.id;
+
     const favorites = await prisma.userFavorite.findMany({
       where: { userId },
       include: {
         product: {
           include: {
             images: { orderBy: { position: "asc" }, take: 1 },
-            variants: { orderBy: { price: "asc" }, take: 1 },
+            variants: {
+              where: { isActive: true },
+              orderBy: { price: "asc" },
+              take: 1,
+            },
           },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    const parsedFavorites = favorites.map((fav) => {
-      const p = fav.product;
-      const firstVariant = p.variants?.[0];
-      const imageUrl = p.images?.[0]?.url || firstVariant?.imageUrl || "";
-      const price = firstVariant ? Number(firstVariant.price) : 0;
-      const compareAtPrice = firstVariant?.compareAtPrice ? Number(firstVariant.compareAtPrice) : null;
-      
-      return {
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        brand: p.brand,
-        imageUrl,
-        price,
-        previousPrice: compareAtPrice,
-        discountPercentage: getDiscountPercentage(compareAtPrice, price),
-      };
-    });
+    const parsedFavorites = favorites
+      .filter((fav) => fav.product?.isActive)
+      .map((fav) => {
+        const p = fav.product;
+        const firstVariant = p.variants?.[0];
+        const imageUrl = p.images?.[0]?.url || firstVariant?.imageUrl || "";
+        const price = firstVariant ? Number(firstVariant.price) : 0;
+        const compareAtPrice =
+          firstVariant?.compareAtPrice != null
+            ? Number(firstVariant.compareAtPrice)
+            : null;
+
+        return {
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          brand: p.brand,
+          imageUrl,
+          price,
+          previousPrice: compareAtPrice,
+          discountPercentage: getDiscountPercentage(compareAtPrice, price),
+        };
+      });
 
     return NextResponse.json({ favorites: parsedFavorites });
   } catch (error) {
@@ -63,47 +73,75 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = user.id;
+  const originCheck = verifySameOrigin(request);
+  if (!originCheck.ok) return originCheck.response;
 
   try {
-    const body = await request.json();
-    const { action, productIds, productId } = body;
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = user.id;
+
+    const parsed = await parseJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+
+    const { action, productIds, productId } = parsed.data;
 
     if (action === "merge" && Array.isArray(productIds)) {
-      if (productIds.length > 0) {
-        // Filtrar IDs contra los que de hecho existen en la DB para evitar Foreign Key error
+      const cleanIds = Array.from(
+        new Set(
+          productIds
+            .filter((id) => typeof id === "string" && id.trim().length > 0)
+            .map((id) => id.trim())
+        )
+      ).slice(0, MAX_FAVORITE_IDS);
+
+      if (cleanIds.length > 0) {
         const validProducts = await prisma.product.findMany({
-          where: { id: { in: productIds } },
-          select: { id: true }
+          where: { id: { in: cleanIds }, isActive: true },
+          select: { id: true },
         });
-        const validProductIds = validProducts.map(p => p.id);
+        const validProductIds = validProducts.map((p) => p.id);
 
         if (validProductIds.length > 0) {
-          const data = validProductIds.map(id => ({ userId, productId: id }));
+          const data = validProductIds.map((id) => ({ userId, productId: id }));
           await prisma.userFavorite.createMany({
             data,
-            skipDuplicates: true, // Postgres handles this
+            skipDuplicates: true,
           });
         }
       }
       return NextResponse.json({ success: true });
     }
 
-    if (action === "add" && productId) {
+    if (action === "add") {
+      const cleanId = typeof productId === "string" ? productId.trim() : "";
+      if (!cleanId) {
+        return NextResponse.json({ error: "ID de producto invalido." }, { status: 400 });
+      }
+      const exists = await prisma.product.findFirst({
+        where: { id: cleanId, isActive: true },
+        select: { id: true },
+      });
+      if (!exists) {
+        return NextResponse.json({ error: "Producto no encontrado." }, { status: 404 });
+      }
+
       await prisma.userFavorite.upsert({
-        where: { userId_productId: { userId, productId } },
+        where: { userId_productId: { userId, productId: cleanId } },
         update: {},
-        create: { userId, productId },
+        create: { userId, productId: cleanId },
       });
       return NextResponse.json({ success: true });
     }
 
-    if (action === "remove" && productId) {
-      await prisma.userFavorite.delete({
-        where: { userId_productId: { userId, productId } },
-      }).catch(() => {}); // Ignore if it doesn't exist
+    if (action === "remove") {
+      const cleanId = typeof productId === "string" ? productId.trim() : "";
+      if (!cleanId) {
+        return NextResponse.json({ error: "ID de producto invalido." }, { status: 400 });
+      }
+      await prisma.userFavorite.deleteMany({
+        where: { userId, productId: cleanId },
+      });
       return NextResponse.json({ success: true });
     }
 

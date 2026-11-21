@@ -1,6 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
+import {
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 function buildPageItems(page, totalPages, windowSize) {
   if (totalPages <= 0) return [];
@@ -95,7 +101,7 @@ export default function Pagination({
             aria-label="Primera pagina"
             title="Primera pagina"
           >
-            {"<<"}
+            <ChevronFirst className="h-4 w-4" />
           </button>
         ) : null}
 
@@ -106,7 +112,7 @@ export default function Pagination({
           disabled={safePage <= 1}
           aria-label="Pagina anterior"
         >
-          {"<"}
+          <ChevronLeft className="h-4 w-4" />
         </button>
 
         {pageItems.map((item) => {
@@ -139,7 +145,7 @@ export default function Pagination({
           disabled={safePage >= safeTotalPages}
           aria-label="Pagina siguiente"
         >
-          {">"}
+          <ChevronRight className="h-4 w-4" />
         </button>
 
         {showFirstLast ? (
@@ -151,7 +157,7 @@ export default function Pagination({
             aria-label="Ultima pagina"
             title="Ultima pagina"
           >
-            {">>"}
+            <ChevronLast className="h-4 w-4" />
           </button>
         ) : null}
       </div>

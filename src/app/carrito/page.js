@@ -7,8 +7,8 @@ import PageShell from "@/components/ui/page-shell";
 import PageHeader from "@/components/ui/page-header";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useMounted } from "@/lib/use-mounted";
+import { getButtonClass } from "@/components/ui/button";
 import QuantityControl from "@/components/ui/quantity-control";
 
 const formatPrice = (value) =>
@@ -19,11 +19,7 @@ const formatPrice = (value) =>
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getCartTotal } = useCartStore();
   const { isAuthenticated } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
 
   if (!mounted) {
     return (
@@ -76,17 +72,16 @@ export default function CartPage() {
       <PageHeader title="Mi Carrito" description={`Tenés ${items.length} tipo(s) de producto en tu carrito.`} />
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_400px] items-start">
-        
         {/* Cart Items */}
         <div className="flex flex-col gap-4">
           {items.map((item) => (
             <div key={item.variant.id} className="flex gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)]/30 p-4">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-[var(--surface)]">
                 {item.variant.imageUrl ? (
-                  <Image 
-                    src={item.variant.imageUrl} 
-                    alt={item.product.name} 
-                    fill 
+                  <Image
+                    src={item.variant.imageUrl}
+                    alt={item.product.name}
+                    fill
                     className="object-cover"
                     sizes="96px"
                   />
@@ -94,29 +89,39 @@ export default function CartPage() {
                   <div className="flex h-full w-full items-center justify-center text-[10px] text-[var(--muted)]">Sin img</div>
                 )}
               </div>
-              
+
               <div className="flex flex-1 flex-col justify-between">
                 <div className="flex justify-between gap-4">
                   <div className="min-w-0">
-                    <Link href={`/producto/${item.product.slug || item.product.id}`} className="font-bold text-base text-[var(--foreground)] hover:text-cyan-400 transition line-clamp-2" style={{ overflowWrap: "anywhere" }}>
+                    <Link
+                      href={`/producto/${item.product.slug || item.product.id}`}
+                      className="font-bold text-base text-[var(--foreground)] hover:text-cyan-400 transition line-clamp-2"
+                      style={{ overflowWrap: "anywhere" }}
+                    >
                       {item.product.name}
                     </Link>
                     <p className="text-xs text-[var(--muted)] mt-1 truncate">{item.variant.summary}</p>
                   </div>
-                  <button onClick={() => removeItem(item.variant.id, isAuthenticated)} className="text-[var(--muted)] hover:text-rose-400 transition" aria-label="Eliminar producto">
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.variant.id, isAuthenticated)}
+                    className="text-[var(--muted)] hover:text-rose-400 transition"
+                    aria-label="Eliminar producto"
+                  >
                     <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
-                
+
                 <div className="flex items-end justify-between mt-4">
                   <div className="flex flex-wrap items-center gap-4">
                     <QuantityControl
                       value={item.quantity}
                       onChange={(newQty) => updateQuantity(item.variant.id, newQty, isAuthenticated)}
-                      max={typeof item.variant.stock === 'number' ? item.variant.stock : 99}
+                      max={typeof item.variant.stock === "number" ? item.variant.stock : 99}
                     />
 
-                    <button 
+                    <button
+                      type="button"
                       onClick={() => removeItem(item.variant.id, isAuthenticated)}
                       className="text-xs font-bold text-rose-500 hover:text-rose-400 transition hidden sm:block"
                     >
@@ -139,34 +144,34 @@ export default function CartPage() {
         {/* Order Summary */}
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)]/20 p-6 sticky top-24">
           <h2 className="text-lg font-bold text-[var(--foreground)] mb-6">Resumen de cuenta</h2>
-          
+
           <div className="flex justify-between text-sm text-[var(--foreground)] mb-4">
             <span>Subtotal</span>
             <span className="font-bold">${formatPrice(subtotal)}</span>
           </div>
-          
+
           <div className="flex justify-between text-sm text-[var(--foreground)] mb-6 pb-6 border-b border-[var(--border)]">
             <span>Envío</span>
             <span className="text-[var(--muted)]">Calculado en checkout</span>
           </div>
-          
+
           <div className="flex justify-between text-xl font-extrabold text-[var(--foreground)] mb-8">
             <span>Total estimado</span>
             <span>${formatPrice(subtotal)}</span>
           </div>
 
-          <Link href="/checkout" className="block w-full">
-            <Button size="lg" className="w-full text-sm font-bold gap-2">
-              Verificar y Pagar
-              <ArrowRight className="w-4 h-4" />
-            </Button>
+          <Link
+            href="/checkout"
+            className={getButtonClass({ size: "lg", className: "w-full text-sm font-bold gap-2" })}
+          >
+            Verificar y Pagar
+            <ArrowRight className="w-4 h-4" />
           </Link>
 
           <p className="mt-4 text-center text-[11px] text-[var(--muted)]">
             Los precios reales y el stock se validarán automáticamente en el siguiente paso.
           </p>
         </div>
-
       </div>
     </PageShell>
   );

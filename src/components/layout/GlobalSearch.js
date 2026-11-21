@@ -29,23 +29,27 @@ export default function GlobalSearch({ className }) {
   // Fetch suggestions
   useEffect(() => {
     let active = true;
+    const trimmed = debouncedQuery.trim();
 
-    if (debouncedQuery.length < 2) {
-      setSuggestions([]);
-      setIsSearching(false);
-      return;
+    if (trimmed.length < 2) {
+      return undefined;
     }
 
     const fetchSuggestions = async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`);
+        if (!res.ok) {
+          if (active) setSuggestions([]);
+          return;
+        }
         const data = await res.json();
         if (active) {
           setSuggestions(data.results || []);
         }
       } catch (error) {
         console.error("Search error", error);
+        if (active) setSuggestions([]);
       } finally {
         if (active) setIsSearching(false);
       }
@@ -78,6 +82,10 @@ export default function GlobalSearch({ className }) {
     }
   };
 
+  const trimmedQuery = query.trim();
+  const pendingDebounce = trimmedQuery !== debouncedQuery.trim();
+  const displayedSuggestions = debouncedQuery.trim().length >= 2 ? suggestions : [];
+
   return (
     <div ref={containerRef} className={clsx("relative w-full", className)}>
       <form onSubmit={handleSearchSubmit} className="relative w-full">
@@ -95,7 +103,7 @@ export default function GlobalSearch({ className }) {
           className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-soft)]/50 pl-10 pr-10 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted)] focus:border-cyan-400 focus:bg-[var(--surface)] shadow-sm dark:shadow-none"
           autoComplete="off"
         />
-        {isSearching && (
+        {(isSearching || (trimmedQuery.length >= 2 && pendingDebounce)) && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
           </div>
@@ -103,11 +111,11 @@ export default function GlobalSearch({ className }) {
       </form>
 
       {/* Autocomplete Dropdown */}
-      {isOpen && query.length >= 2 && (
+      {isOpen && trimmedQuery.length >= 2 && (
         <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl backdrop-blur-xl">
           <ul className="flex flex-col py-2">
-            {suggestions.length > 0 ? (
-              suggestions.map((product) => (
+            {displayedSuggestions.length > 0 ? (
+              displayedSuggestions.map((product) => (
                 <li key={product.id}>
                   <Link
                     href={`/producto/${product.slug || product.id}`}
@@ -136,20 +144,20 @@ export default function GlobalSearch({ className }) {
                       )}
                     </div>
                     <span className="ml-auto text-sm font-bold text-cyan-400 shrink-0">
-                      ${product.price}
+                      ${Number(product.price || 0).toFixed(2)}
                     </span>
                   </Link>
                 </li>
               ))
             ) : (
-              !isSearching && (
+              !isSearching && !pendingDebounce && (
                 <li className="px-4 py-3 text-sm text-[var(--muted)] font-medium">
-                No encontramos productos para &ldquo;{query.length > 40 ? query.slice(0, 40) + "…" : query}&rdquo;
-              </li>
+                  No encontramos productos para &ldquo;{query.length > 40 ? `${query.slice(0, 40)}…` : query}&rdquo;
+                </li>
               )
             )}
           </ul>
-          
+
           {/* Exact search sentence option as requested */}
           <div className="border-t border-[var(--border)] bg-[var(--surface-soft)]/30 p-2">
             <button
@@ -159,7 +167,7 @@ export default function GlobalSearch({ className }) {
             >
               <Search className="h-4 w-4 shrink-0" />
               <span className="truncate min-w-0">
-                Buscar exactamente &ldquo;{query.length > 40 ? query.slice(0, 40) + "…" : query}&rdquo;
+                Buscar exactamente &ldquo;{query.length > 40 ? `${query.slice(0, 40)}…` : query}&rdquo;
               </span>
             </button>
           </div>

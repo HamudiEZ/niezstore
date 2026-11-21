@@ -4,8 +4,11 @@ import { getCurrentUser } from "@/lib/auth";
 import PageShell from "@/components/ui/page-shell";
 import PageHeader from "@/components/ui/page-header";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Admin | Niez Store",
+  robots: { index: false, follow: false },
 };
 
 export default async function AdminPage() {
@@ -18,7 +21,7 @@ export default async function AdminPage() {
       <PageHeader
         eyebrow="Panel interno"
         title="Admin Dashboard"
-        description="Gestiona categorias y productos en modulos separados. Los cambios se guardan en la base de datos."
+        description="Gestiona Resumen, Categorías, Productos y Ventas en módulos separados. Los cambios se guardan en la base de datos."
         eyebrowClassName="admin-subtitle"
         titleClassName="admin-title"
         descriptionClassName="admin-subtitle"

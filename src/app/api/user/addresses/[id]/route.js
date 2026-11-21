@@ -1,64 +1,78 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { INPUT_LIMITS } from "@/lib/input-limits";
+import { parseJsonBody, verifySameOrigin } from "@/lib/api-security";
+import { validateAddressPayload } from "@/lib/address-validation";
 
 // PUT /api/user/addresses/[id] — update an address
 export async function PUT(request, { params }) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  const originCheck = verifySameOrigin(request);
+  if (!originCheck.ok) return originCheck.response;
 
-  const { id } = await params;
-  const body = await request.json().catch(() => ({}));
-  const { label, receiver, line1, line2, city, region, postalCode, countryCode, isDefault } = body;
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
 
-  // Ownership check
-  const existing = await prisma.address.findFirst({ where: { id, userId: user.id } });
-  if (!existing) return NextResponse.json({ error: "Dirección no encontrada." }, { status: 404 });
+    const resolvedParams = await params;
+    const id = typeof resolvedParams?.id === "string" ? resolvedParams.id.trim() : "";
+    if (!id) return NextResponse.json({ error: "ID requerido." }, { status: 400 });
 
-  if (!receiver?.trim() || !line1?.trim() || !city?.trim()) {
-    return NextResponse.json({ error: "Nombre del destinatario, dirección y ciudad son obligatorios." }, { status: 400 });
-  }
+    const parsed = await parseJsonBody(request);
+    if (!parsed.ok) return parsed.response;
 
-  const address = await prisma.$transaction(async (tx) => {
-    if (isDefault) {
-      await tx.address.updateMany({
-        where: { userId: user.id, id: { not: id } },
-        data: { isDefault: false },
-      });
+    const existing = await prisma.address.findFirst({ where: { id, userId: user.id } });
+    if (!existing) return NextResponse.json({ error: "Dirección no encontrada." }, { status: 404 });
+
+    const validation = validateAddressPayload(parsed.data);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    return tx.address.update({
-      where: { id },
-      data: {
-        label: label?.trim() || null,
-        receiver: receiver.trim(),
-        line1: line1.trim(),
-        line2: line2?.trim() || null,
-        city: city.trim(),
-        region: region?.trim() || null,
-        postalCode: postalCode?.trim() || null,
-        countryCode: countryCode?.trim() || "PY",
-        isDefault: !!isDefault,
-      },
-    });
-  });
+    const address = await prisma.$transaction(async (tx) => {
+      if (validation.data.isDefault) {
+        await tx.address.updateMany({
+          where: { userId: user.id, id: { not: id } },
+          data: { isDefault: false },
+        });
+      }
 
-  return NextResponse.json({ address });
+      return tx.address.update({
+        where: { id },
+        data: validation.data,
+      });
+    });
+
+    return NextResponse.json({ address });
+  } catch (error) {
+    console.error("Address PUT Error:", error);
+    return NextResponse.json({ error: "Error interno al actualizar dirección." }, { status: 500 });
+  }
 }
 
 // DELETE /api/user/addresses/[id] — delete an address
 export async function DELETE(request, { params }) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  const originCheck = verifySameOrigin(request);
+  if (!originCheck.ok) return originCheck.response;
 
-  const { id } = await params;
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
 
-  // Ownership check
-  const existing = await prisma.address.findFirst({ where: { id, userId: user.id } });
-  if (!existing) return NextResponse.json({ error: "Dirección no encontrada." }, { status: 404 });
+    const resolvedParams = await params;
+    const id = typeof resolvedParams?.id === "string" ? resolvedParams.id.trim() : "";
+    if (!id) return NextResponse.json({ error: "ID requerido." }, { status: 400 });
 
-  await prisma.address.delete({ where: { id } });
+    const deleted = await prisma.address.deleteMany({
+      where: { id, userId: user.id },
+    });
 
-  return NextResponse.json({ success: true });
+    if (deleted.count === 0) {
+      return NextResponse.json({ error: "Dirección no encontrada." }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Address DELETE Error:", error);
+    return NextResponse.json({ error: "Error interno al eliminar dirección." }, { status: 500 });
+  }
 }

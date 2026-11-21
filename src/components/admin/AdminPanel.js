@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import CategoriesManager from "./CategoriesManager";
 import ProductsManager from "./ProductsManager";
@@ -42,24 +42,52 @@ export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [orderSearchContext, setOrderSearchContext] = useState("");
   const [externalProductId, setExternalProductId] = useState(null);
-  
+
   const [globalStats, setGlobalStats] = useState(DEFAULT_STATS);
   const [error, setError] = useState("");
 
-  // Only refresh global stats if they switch tabs to keep them reasonably up to date
   useEffect(() => {
     let active = true;
     fetchJson("/api/admin/stats")
       .then((data) => {
         if (active && data.stats) {
           setGlobalStats(data.stats);
+          setError("");
         }
       })
       .catch((err) => {
         if (active) setError(err.message);
       });
-    return () => { active = false };
-  }, [activeSection]); // Re-fetch lightweight stats on tab change
+    return () => {
+      active = false;
+    };
+  }, [activeSection]);
+
+  const handleNavigateToOrders = useCallback((code) => {
+    if (typeof code === "string" && code !== "orders") {
+      setOrderSearchContext(code);
+    } else {
+      setOrderSearchContext("");
+    }
+    setActiveSection("orders");
+  }, []);
+
+  const handleNavigateToProduct = useCallback((productId) => {
+    setExternalProductId(productId);
+    setActiveSection("products");
+  }, []);
+
+  const handleClearOrderSearch = useCallback(() => {
+    setOrderSearchContext("");
+  }, []);
+
+  const handleClearExternalProductId = useCallback(() => {
+    setExternalProductId(null);
+  }, []);
+
+  const handleGoToProducts = useCallback(() => {
+    setActiveSection("products");
+  }, []);
 
   return (
     <AdminLayout
@@ -70,37 +98,27 @@ export default function AdminPanel() {
       onTabChange={setActiveSection}
     >
       {activeSection === "dashboard" && (
-        <DashboardTab 
-          onNavigateToOrders={(code) => {
-            if (typeof code === 'string' && code !== 'orders') {
-              setOrderSearchContext(code);
-            } else {
-              setOrderSearchContext("");
-            }
-            setActiveSection("orders");
-          }} 
-          onNavigateToProduct={(productId) => {
-             setExternalProductId(productId);
-             setActiveSection("products");
-          }}
+        <DashboardTab
+          onNavigateToOrders={handleNavigateToOrders}
+          onNavigateToProduct={handleNavigateToProduct}
         />
       )}
-      
+
       {activeSection === "categories" && (
-        <CategoriesManager onGoToProducts={() => setActiveSection("products")} />
+        <CategoriesManager onGoToProducts={handleGoToProducts} />
       )}
-      
+
       {activeSection === "orders" && (
-        <OrdersManager 
-          initialSearch={orderSearchContext} 
-          onClearInitialSearch={() => setOrderSearchContext("")} 
+        <OrdersManager
+          initialSearch={orderSearchContext}
+          onClearInitialSearch={handleClearOrderSearch}
         />
       )}
 
       {activeSection === "products" && (
-        <ProductsManager 
-           externalProductId={externalProductId} 
-           onClearExternalProductId={() => setExternalProductId(null)} 
+        <ProductsManager
+          externalProductId={externalProductId}
+          onClearExternalProductId={handleClearExternalProductId}
         />
       )}
     </AdminLayout>

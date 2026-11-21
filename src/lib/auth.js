@@ -7,6 +7,20 @@ export const SESSION_COOKIE_NAME = "ns_session";
 const SESSION_TTL_DAYS = 14;
 const BCRYPT_ROUNDS = 12;
 const SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$lotmwhdvZB.W8yYxwI8s8unBLM.eLB18568wXoP5I020RIRQZuI/W";
+const BCRYPT_HASH_PREFIX_REGEX = /^\$2[aby]\$/;
+
+const SAFE_USER_SELECT = {
+  id: true,
+  email: true,
+  fullName: true,
+  role: true,
+  phone: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
 let lastSessionCleanupAt = 0;
 
 export function normalizeEmail(email) {
@@ -21,11 +35,21 @@ export async function verifyPassword(password, passwordHash) {
   const hash = String(passwordHash ?? "");
   if (!hash) return false;
 
-  if (hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$")) {
+  if (BCRYPT_HASH_PREFIX_REGEX.test(hash)) {
     return bcrypt.compare(String(password), hash);
   }
 
   return false;
+}
+
+export async function verifyPasswordConstantTime(password, passwordHash) {
+  const hash = String(passwordHash ?? "");
+  if (!hash || !BCRYPT_HASH_PREFIX_REGEX.test(hash)) {
+    await bcrypt.compare(String(password), DUMMY_PASSWORD_HASH);
+    return false;
+  }
+
+  return bcrypt.compare(String(password), hash);
 }
 
 export function hashSessionToken(token) {
@@ -56,33 +80,31 @@ export async function deleteSessionByToken(token) {
 }
 
 export async function getCurrentUser() {
-  await maybeCleanupExpiredSessions();
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
 
+  await maybeCleanupExpiredSessions();
+
   const tokenHash = hashSessionToken(token);
   const session = await prisma.session.findUnique({
     where: { tokenHash },
-    include: { user: true },
+    include: {
+      user: {
+        select: SAFE_USER_SELECT,
+      },
+    },
   });
 
   if (!session) return null;
   if (session.expiresAt.getTime() <= Date.now()) {
-    await prisma.session.delete({ where: { id: session.id } });
+    await prisma.session.deleteMany({ where: { id: session.id } });
     return null;
   }
 
   return session.user;
 }
 
-/**
- * @serverless-caveat
- * `lastSessionCleanupAt` es estado local de modulo. En un entorno serverless (Vercel, AWS Lambda)
- * o multi-worker, esto se reinicia en cada cold start. El throttle de 5 minutos solo aplica
- * por instancia. En alta concurrencia, multiples instancias ejecutaran el cleanup a la vez.
- * Como el deleteMany es idempotente, no es critico, pero el throttling es ilusorio en la nube.
- */
 export async function maybeCleanupExpiredSessions() {
   const now = Date.now();
   if (now - lastSessionCleanupAt < SESSION_CLEANUP_INTERVAL_MS) return;

@@ -1,39 +1,56 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/components/ecommerce/ProductCard";
-import { getProductsByCategorySlug, getCategoryBrands } from "@/lib/catalog";
+import {
+  getCategoryBrands,
+  getCategoryBySlug,
+  getProductsByCategorySlug,
+} from "@/lib/catalog";
 import PageShell from "@/components/ui/page-shell";
 import PageHeader from "@/components/ui/page-header";
-import SectionCard from "@/components/ui/section-card";
 import SearchFilters from "@/components/ecommerce/SearchFilters";
 import SearchPagination from "@/components/ui/search-pagination";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }) {
+  const resolvedParams = await params;
+  const category = await getCategoryBySlug(resolvedParams?.slug);
+  if (!category) {
+    return { title: "Categoría no encontrada | Niez Store" };
+  }
+  return {
+    title: `${category.name} | Niez Store`,
+    description:
+      category.description ||
+      `Explora nuestra selección de ${category.name.toLowerCase()} en Niez Store.`,
+  };
+}
 
 export default async function CategoryPage({ params, searchParams }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
-  
+
   const slug = resolvedParams?.slug;
-  const page = Number(resolvedSearchParams?.page ?? 1);
+  const page = Math.max(1, Number.parseInt(String(resolvedSearchParams?.page ?? "1"), 10) || 1);
   const minPrice = resolvedSearchParams?.minPrice;
   const maxPrice = resolvedSearchParams?.maxPrice;
-  const brand = resolvedSearchParams?.brand;
-  const sort = resolvedSearchParams?.sort;
+  const brand = typeof resolvedSearchParams?.brand === "string" ? resolvedSearchParams.brand.trim() : undefined;
+  const sort = typeof resolvedSearchParams?.sort === "string" ? resolvedSearchParams.sort : undefined;
   const onSale = resolvedSearchParams?.onSale === "true";
 
-  const [
-    { category, products, totalItems, totalPages },
-    brands
-  ] = await Promise.all([
+  const [{ category, products, totalItems, totalPages }, brands] = await Promise.all([
     getProductsByCategorySlug(slug, {
       page,
       pageSize: 20,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      minPrice,
+      maxPrice,
       brand,
       sort,
       onSale,
     }),
-    getCategoryBrands(slug)
+    getCategoryBrands(slug),
   ]);
 
   if (!category) {
@@ -51,15 +68,17 @@ export default async function CategoryPage({ params, searchParams }) {
         <span className="text-cyan-500">{category.name}</span>
       </div>
 
-      <PageHeader 
-        title={category.name} 
-        description={category.description || `Explora nuestra selección de ${category.name.toLowerCase()}.`} 
+      <PageHeader
+        title={category.name}
+        description={category.description || `Explora nuestra selección de ${category.name.toLowerCase()}.`}
       />
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
         {/* Filters Sidebar - Reusing SearchFilters */}
         <div className="lg:sticky lg:top-24 lg:h-fit">
-          <SearchFilters brands={brands} />
+          <Suspense fallback={null}>
+            <SearchFilters brands={brands} />
+          </Suspense>
         </div>
 
         {/* Results Area */}
@@ -72,8 +91,8 @@ export default async function CategoryPage({ params, searchParams }) {
               <p className="mt-1 text-sm text-[var(--muted)]">
                 No se encontraron productos en esta categoría con los filtros aplicados.
               </p>
-              <Link 
-                href={`/categoria/${slug}`} 
+              <Link
+                href={`/categoria/${slug}`}
                 className="mt-6 rounded-xl bg-cyan-400 px-6 py-2.5 text-xs font-bold text-[#000] transition hover:bg-cyan-300"
               >
                 Limpiar filtros
@@ -90,12 +109,14 @@ export default async function CategoryPage({ params, searchParams }) {
 
               {/* Pagination Area */}
               <div className="mt-4 flex justify-center border-t border-[var(--border)] py-8">
-                <SearchPagination 
-                  page={page} 
-                  totalPages={totalPages} 
-                  totalItems={totalItems} 
-                  pageSize={20} 
-                />
+                <Suspense fallback={null}>
+                  <SearchPagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={20}
+                  />
+                </Suspense>
               </div>
             </>
           )}

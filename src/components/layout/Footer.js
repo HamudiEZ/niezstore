@@ -1,12 +1,13 @@
 import Link from "next/link";
+import Logo from "../ui/Logo";
 
 export default function Footer() {
   return (
     <footer className="mt-10 border-t border-slate-800 bg-slate-950/75 backdrop-blur">
       <div className="mx-auto grid w-full max-w-[1400px] gap-8 px-4 py-8 md:grid-cols-4 md:px-8 lg:px-10">
         <div className="md:col-span-2">
-          <p className="text-lg font-extrabold tracking-tight text-slate-100">Niez Store</p>
-          <p className="mt-2 max-w-md text-sm text-slate-400">
+          <Logo size="md" />
+          <p className="mt-3 max-w-md text-sm text-slate-400">
             Ecommerce demo para comprar tecnologia, hogar, moda y mas desde un
             solo lugar.
           </p>

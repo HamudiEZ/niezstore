@@ -17,28 +17,27 @@ export function sanitizePhoneInput(value) {
   let sanitized = raw.replace(/[^0-9+()\-\s]/g, "");
   sanitized = sanitized.replace(/\+/g, "");
   sanitized = `${hasLeadingPlus ? "+" : ""}${sanitized}`;
-  sanitized = sanitized.replace(/\s{2,}/g, " ").slice(0, 22);
+  sanitized = sanitized.replace(/\s{2,}/g, " ").slice(0, INPUT_LIMITS.checkoutPhone);
 
   return sanitized;
 }
 
 export function sanitizePostalCodeInput(value) {
-  return String(value ?? "").replace(/\D/g, "").slice(0, 10);
+  return String(value ?? "").replace(/\D/g, "").slice(0, INPUT_LIMITS.checkoutPostalCode);
 }
 
 export function sanitizeNameInput(value) {
-  // Allow letters (including Spanish accents) and spaces, remove numbers and special chars
-  return String(value ?? "").replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+  return String(value ?? "").replace(/[^\p{L}\s'-]/gu, "");
 }
 
-function validatePhone(phone) {
-  if (!phone) return null;
-  const normalized = sanitizePhoneInput(phone);
-  const digits = normalized.replace(/\D/g, "");
+function validatePhone(rawPhone) {
+  const trimmed = normalizeText(rawPhone);
+  if (!trimmed) return null;
 
-  if (!PHONE_ALLOWED_REGEX.test(normalized)) {
+  if (!PHONE_ALLOWED_REGEX.test(trimmed)) {
     return "Telefono invalido. Usa solo numeros y opcionalmente +, espacios o guiones.";
   }
+  const digits = trimmed.replace(/\D/g, "");
   if (digits.length < 7 || digits.length > 15) {
     return "Telefono invalido. Debe tener entre 7 y 15 digitos.";
   }
@@ -46,21 +45,22 @@ function validatePhone(phone) {
   return null;
 }
 
-function validatePostalCode(postalCode) {
-  if (!postalCode) return null;
-  if (!POSTAL_CODE_REGEX.test(postalCode)) {
+function validatePostalCode(rawPostalCode) {
+  const trimmed = normalizeText(rawPostalCode);
+  if (!trimmed) return null;
+  if (!POSTAL_CODE_REGEX.test(trimmed)) {
     return "Codigo postal invalido. Usa solo numeros (3 a 10 digitos).";
   }
   return null;
 }
 
 export function normalizeCheckoutFormData(input) {
-  const fullName = normalizeText(input?.fullName).slice(0, INPUT_LIMITS.checkoutFullName);
+  const fullName = normalizeText(input?.fullName);
   const email = normalizeText(input?.email).toLowerCase();
-  const phone = sanitizePhoneInput(input?.phone || "").trim();
-  const line1 = normalizeText(input?.line1).slice(0, INPUT_LIMITS.checkoutLine1);
-  const city = normalizeText(input?.city).slice(0, INPUT_LIMITS.checkoutCity);
-  const postalCode = sanitizePostalCodeInput(input?.postalCode || "");
+  const phone = normalizeText(input?.phone);
+  const line1 = normalizeText(input?.line1);
+  const city = normalizeText(input?.city);
+  const postalCode = normalizeText(input?.postalCode);
 
   return {
     fullName,
@@ -82,7 +82,11 @@ export function validateCheckoutFormData(input) {
     errors.fullName = `El nombre no puede superar ${INPUT_LIMITS.checkoutFullName} caracteres.`;
   }
 
-  if (!normalized.email || !EMAIL_REGEX.test(normalized.email)) {
+  if (
+    !normalized.email ||
+    normalized.email.length > INPUT_LIMITS.userEmail ||
+    !EMAIL_REGEX.test(normalized.email)
+  ) {
     errors.email = "Correo electronico invalido.";
   }
 
@@ -111,6 +115,12 @@ export function validateCheckoutFormData(input) {
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
-    normalized,
+    normalized: {
+      ...normalized,
+      phone: normalized.phone ? sanitizePhoneInput(normalized.phone).trim() : "",
+      postalCode: normalized.postalCode
+        ? sanitizePostalCodeInput(normalized.postalCode)
+        : "",
+    },
   };
 }
