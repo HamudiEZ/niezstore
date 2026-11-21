@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Truck, ShieldCheck, Headphones } from "lucide-react";
 import CategoryPills from "../components/ecommerce/CategoryPills";
 import HeroBanner from "../components/ecommerce/HeroBanner";
 import ProductCarousel from "../components/ecommerce/ProductCarousel";
@@ -31,24 +32,39 @@ export default async function Home() {
       />
 
       <div className="space-y-6">
-        <section className="grid shop-card-grid sm:grid-cols-3">
-          <article className="soft-card p-4 text-sm">
-            <p className="font-semibold text-[var(--foreground)]">Envío confiable</p>
-            <p className="mt-1 text-[var(--muted)]">
-              Cobertura en todo el país y seguimiento en tiempo real.
-            </p>
+        <section className="grid shop-card-grid sm:grid-cols-3 gap-4">
+          <article className="soft-card p-4 text-sm flex items-start gap-3.5 border border-[var(--border)] bg-[var(--surface)] transition hover:border-[var(--accent)]/50">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
+              <Truck className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-bold text-[var(--foreground)]">Envío confiable</p>
+              <p className="mt-1 text-xs text-[var(--muted)] leading-relaxed">
+                Cobertura en todo el país y seguimiento en tiempo real.
+              </p>
+            </div>
           </article>
-          <article className="soft-card p-4 text-sm">
-            <p className="font-semibold text-[var(--foreground)]">Pagos seguros</p>
-            <p className="mt-1 text-[var(--muted)]">
-              Tarjeta, transferencia y efectivo en puntos autorizados.
-            </p>
+          <article className="soft-card p-4 text-sm flex items-start gap-3.5 border border-[var(--border)] bg-[var(--surface)] transition hover:border-[var(--accent)]/50">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-bold text-[var(--foreground)]">Pagos seguros</p>
+              <p className="mt-1 text-xs text-[var(--muted)] leading-relaxed">
+                Tarjeta, transferencia y efectivo en puntos autorizados.
+              </p>
+            </div>
           </article>
-          <article className="soft-card p-4 text-sm">
-            <p className="font-semibold text-[var(--foreground)]">Soporte 24/7</p>
-            <p className="mt-1 text-[var(--muted)]">
-              Te ayudamos antes, durante y después de cada compra.
-            </p>
+          <article className="soft-card p-4 text-sm flex items-start gap-3.5 border border-[var(--border)] bg-[var(--surface)] transition hover:border-[var(--accent)]/50">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+              <Headphones className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-bold text-[var(--foreground)]">Soporte 24/7</p>
+              <p className="mt-1 text-xs text-[var(--muted)] leading-relaxed">
+                Te ayudamos antes, durante y después de cada compra.
+              </p>
+            </div>
           </article>
         </section>
 
@@ -56,11 +72,11 @@ export default async function Home() {
 
         <SectionCard
           title="Productos destacados"
-          titleClassName="section-title text-slate-100"
+          titleClassName="section-title text-[var(--foreground)]"
           actions={
             <Link
               href="/ofertas"
-              className="text-xs font-semibold text-cyan-300 hover:underline"
+              className="text-xs font-semibold text-[var(--accent)] hover:underline"
             >
               Ver todas las ofertas
             </Link>
@@ -92,11 +108,11 @@ export default async function Home() {
 
         <SectionCard
           title="Productos nuevos"
-          titleClassName="section-title text-slate-100"
+          titleClassName="section-title text-[var(--foreground)]"
           actions={
             <Link
               href="/categorias"
-              className="text-xs font-semibold text-cyan-300 hover:underline"
+              className="text-xs font-semibold text-[var(--accent)] hover:underline"
             >
               Ver todo el catálogo
             </Link>

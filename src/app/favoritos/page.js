@@ -51,7 +51,7 @@ function FavoritesContent() {
           </p>
           <Link
             href="/categorias"
-            className="mt-6 rounded-xl bg-cyan-400 px-6 py-2.5 text-xs font-bold text-[#000] transition hover:bg-cyan-300"
+            className="mt-6 rounded-xl bg-[var(--accent)] px-6 py-2.5 text-xs font-bold text-[var(--background)] transition hover:opacity-90 shadow-md"
           >
             Explorar productos
           </Link>

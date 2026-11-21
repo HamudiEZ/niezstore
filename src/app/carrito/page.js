@@ -52,7 +52,7 @@ export default function CartPage() {
           </p>
           <Link
             href="/categorias"
-            className="mt-6 inline-flex rounded-xl bg-cyan-400 px-8 py-3 text-sm font-bold text-[#000] transition hover:bg-cyan-300"
+            className="mt-6 inline-flex rounded-xl bg-[var(--accent)] px-8 py-3 text-sm font-bold text-[var(--background)] transition hover:opacity-90 shadow-md"
           >
             Explorar catálogo
           </Link>

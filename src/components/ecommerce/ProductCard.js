@@ -47,7 +47,7 @@ export default function ProductCard({ product, variant = "grid" }) {
     <Link
       href={`/producto/${product.slug || product.id}`}
       className={clsx(
-        "group flex max-w-full rounded-xl border border-slate-700 bg-slate-900/80 transition hover:-translate-y-0.5 hover:border-cyan-400/70 hover:shadow-2xl",
+        "group flex max-w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/70 hover:shadow-xl dark:bg-slate-900/80",
         isRail && "flex-col h-full min-h-[19.5rem] w-[11.25rem] shrink-0 overflow-hidden p-0 sm:min-h-[20.5rem] sm:w-[12.5rem]",
         !isRail && !isList && "flex-col min-w-0 p-3",
         isList && "flex-row h-auto min-h-[10rem] sm:h-40 min-w-0 overflow-hidden"
@@ -85,7 +85,7 @@ export default function ProductCard({ product, variant = "grid" }) {
             </div>
           )}
           {hasDiscount ? (
-            <span className="absolute left-2 top-2 z-10 rounded-full bg-[var(--primary)] px-2 py-0.5 text-[11px] font-semibold text-[var(--primary-foreground)]">
+            <span className="absolute left-2 top-2 z-10 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2 py-0.5 text-[11px] font-black text-white shadow-md shadow-rose-500/20">
               -{product.discountPercentage}%
             </span>
           ) : null}
@@ -113,7 +113,7 @@ export default function ProductCard({ product, variant = "grid" }) {
       >
         <p
           className={clsx(
-            "font-semibold text-slate-100",
+            "font-semibold text-[var(--foreground)]",
             isRail ? "text-sm leading-snug line-clamp-2" : isList ? "text-sm sm:text-base line-clamp-2" : "text-sm line-clamp-2",
           )}
         >
@@ -121,7 +121,7 @@ export default function ProductCard({ product, variant = "grid" }) {
         </p>
 
         {isList && (
-          <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate">{product.brand || "Niez Store"}</p>
+          <p className="text-xs text-[var(--muted)] mt-1 line-clamp-1 truncate">{product.brand || "Niez Store"}</p>
         )}
 
         {hasRating && !isList ? (
@@ -132,16 +132,16 @@ export default function ProductCard({ product, variant = "grid" }) {
           <div className="mt-auto pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex flex-wrap items-baseline gap-2">
-                <span className="text-xl font-extrabold tracking-tight text-slate-100">
+                <span className="text-xl font-extrabold tracking-tight text-[var(--foreground)]">
                   ${priceLabel}
                 </span>
                 {previousPriceLabel ? (
-                  <span className="text-sm text-slate-500 line-through">
+                  <span className="text-sm text-[var(--muted)] line-through">
                     ${previousPriceLabel}
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1 text-xs text-emerald-300">Envío rápido disponible</p>
+              <p className="mt-1 text-xs text-[var(--primary)]">Envío rápido disponible</p>
             </div>
 
             <div className="flex shrink-0">
