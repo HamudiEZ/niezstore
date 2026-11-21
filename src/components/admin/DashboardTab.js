@@ -72,47 +72,103 @@ function DashboardCard({ title, value, icon: Icon, description, isWarning }) {
   );
 }
 
-function SimpleBarChart({ data }) {
+const Y_TICKS = 4;
+
+function formatCompact(value) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
+  return String(Math.round(value));
+}
+
+function SalesChart({ data }) {
   if (!data || data.length === 0) {
     return (
-      <div className="h-40 flex items-center justify-center text-[var(--muted)] text-sm">
-        Sin datos
+      <div className="h-52 flex items-center justify-center text-[var(--muted)] text-sm">
+        Sin datos de ventas aún
       </div>
     );
   }
 
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
+  const ticks = Array.from({ length: Y_TICKS + 1 }, (_, i) =>
+    Math.round((maxRevenue / Y_TICKS) * i)
+  ).reverse();
 
   return (
-    <div className="overflow-x-auto pb-1">
-      <div className="h-48 min-w-[420px] flex items-end gap-1.5 pt-4">
-        {data.map((item, idx) => {
-          const heightPercent = (item.revenue / maxRevenue) * 100;
-          const isToday = idx === data.length - 1;
-          const [, month = "", day = ""] = String(item.date || "").split("-");
-          const dateLabel = day && month ? `${day}/${month}` : item.date;
+    <div className="overflow-x-auto">
+      <div className="min-w-[480px]">
+        <div className="flex">
+          {/* Eje Y */}
+          <div className="flex flex-col justify-between pr-3 text-right shrink-0 w-12 pb-6">
+            {ticks.map((tick) => (
+              <span key={tick} className="text-[9px] font-bold text-[var(--muted)] leading-none">
+                ${formatCompact(tick)}
+              </span>
+            ))}
+          </div>
 
-          return (
-            <div
-              key={item.date}
-              className="group relative flex-1 flex flex-col items-center justify-end h-full min-w-[10px]"
-            >
-              <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--foreground)] text-[var(--surface)] text-[10px] py-1 px-2 rounded pointer-events-none whitespace-nowrap z-10 flex flex-col items-center">
-                <span className="font-bold">${formatPrice(item.revenue)}</span>
-                <span className="opacity-70">{dateLabel}</span>
-              </div>
-
-              <div
-                style={{ height: `${Math.max(heightPercent, 2)}%` }}
-                className={`w-full rounded-t-sm transition-all duration-300 ${
-                  isToday
-                    ? "bg-[var(--accent)]"
-                    : "bg-[var(--accent)]/30 hover:bg-[var(--accent)]/60"
-                }`}
-              />
+          {/* Área del gráfico */}
+          <div className="flex-1 relative">
+            {/* Grid lines */}
+            <div className="absolute inset-0 pb-6 flex flex-col justify-between pointer-events-none">
+              {ticks.map((tick) => (
+                <div
+                  key={tick}
+                  className="border-t border-[var(--border)]/50 border-dashed w-full"
+                />
+              ))}
             </div>
-          );
-        })}
+
+            {/* Barras */}
+            <div className="relative flex items-end gap-1 h-44 pb-6">
+              {data.map((item, idx) => {
+                const heightPercent = (item.revenue / maxRevenue) * 100;
+                const isToday = idx === data.length - 1;
+                const hasRevenue = item.revenue > 0;
+                const [, month = "", day = ""] = String(item.date || "").split("-");
+                const dateLabel = day && month ? `${day}/${month}` : item.date;
+                const showLabel = idx === 0 || idx === data.length - 1 || idx % Math.ceil(data.length / 6) === 0;
+
+                return (
+                  <div
+                    key={item.date}
+                    className="group relative flex-1 flex flex-col items-center justify-end h-full"
+                  >
+                    {/* Tooltip */}
+                    {hasRevenue && (
+                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-all duration-150 scale-95 group-hover:scale-100 bg-[var(--surface)] border border-[var(--border)] shadow-xl text-[10px] py-1.5 px-2.5 rounded-lg pointer-events-none whitespace-nowrap z-20 flex flex-col items-center gap-0.5">
+                        <span className="font-black text-[var(--foreground)]">${formatPrice(item.revenue)}</span>
+                        <span className="text-[var(--muted)]">{dateLabel}</span>
+                        {item.orders > 0 && (
+                          <span className="text-[var(--accent)] font-bold">{item.orders} pedido{item.orders !== 1 ? "s" : ""}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Barra */}
+                    <div
+                      style={{ height: `${Math.max(heightPercent, hasRevenue ? 3 : 1)}%` }}
+                      className={`w-full rounded-t-md transition-all duration-500 ${
+                        isToday
+                          ? "bg-gradient-to-t from-[var(--accent)] to-cyan-300 shadow-[0_0_12px_var(--accent)/40]"
+                          : hasRevenue
+                            ? "bg-[var(--accent)]/25 hover:bg-[var(--accent)]/55 transition-colors"
+                            : "bg-[var(--border)]/40"
+                      }`}
+                    />
+
+                    {/* Etiqueta fecha */}
+                    {showLabel && (
+                      <span className="absolute top-full mt-1 text-[8px] text-[var(--muted)] font-bold whitespace-nowrap">
+                        {dateLabel}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -226,7 +282,7 @@ export default function DashboardTab({
         <p className="text-xs text-[var(--muted)] mb-2">
           Histórico de ingresos diarios de pedidos completados (hora Paraguay).
         </p>
-        <SimpleBarChart data={salesTrend} />
+        <SalesChart data={salesTrend} />
         <div className="flex justify-between text-[10px] text-[var(--muted)] mt-2 font-bold uppercase tracking-widest px-1">
           <span>Hace 30 días</span>
           <span>Hoy</span>

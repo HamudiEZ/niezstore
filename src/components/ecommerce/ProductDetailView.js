@@ -391,7 +391,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
               })()}
 
               {discountPercentage ? (
-                <span className="absolute left-3 top-3 rounded-full bg-[var(--primary)] px-3 py-1 text-xs font-bold text-[var(--primary-foreground)]">
+                <span className="absolute left-3 top-3 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1 text-xs font-black text-white shadow-lg shadow-rose-500/30">
                   -{discountPercentage}% OFF
                 </span>
               ) : null}
@@ -406,10 +406,10 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                   key={image.key}
                   type="button"
                   onClick={() => setPreferredImageUrl(image.url)}
-                  className={`overflow-hidden rounded-xl border transition ${
+                  className={`overflow-hidden rounded-xl border-2 transition-all duration-200 ${
                     isActive
-                      ? "border-[var(--accent)] shadow-[0_0_0_1px_var(--accent)]"
-                      : "border-[var(--border)] hover:border-[var(--muted)]"
+                      ? "border-[var(--accent)] shadow-[0_0_0_2px_rgba(0,200,220,0.25)] scale-[1.04]"
+                      : "border-transparent opacity-55 hover:opacity-90 hover:border-[var(--muted)]/60"
                   }`}
                   aria-label={`Seleccionar imagen ${index + 1}`}
                 >

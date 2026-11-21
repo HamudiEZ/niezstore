@@ -12,6 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ModeToggle from "../ui/mode-toggle";
 import GlobalSearch from "./GlobalSearch";
+import Logo from "../ui/Logo";
 import { useCartStore } from "@/store/cartStore";
 import { useFavoritesStore } from "@/store/favoritesStore";
 import { useAuthStore } from "@/store/authStore";
@@ -99,14 +100,7 @@ export default function Navbar() {
             {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
 
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400 text-xs font-bold text-slate-950">
-              NS
-            </span>
-            <span className="text-base font-extrabold tracking-tight text-slate-100 md:text-lg">
-              Niez Store
-            </span>
-          </Link>
+          <Logo size="md" />
 
           <div className="hidden min-w-0 md:flex md:flex-1 md:justify-center md:px-4 lg:px-6">
             <GlobalSearch className="max-w-[480px]" />
